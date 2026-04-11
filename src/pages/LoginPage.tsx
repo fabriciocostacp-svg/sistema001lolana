@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,13 @@ export const LoginPage = () => {
     setIsForgotLoading(false);
   };
 
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const resetForgotDialog = () => {
     setForgotStep("phone");
     setForgotPhone("");
@@ -128,6 +135,16 @@ export const LoginPage = () => {
         <div className="absolute bottom-32 left-1/4 w-8 h-8 md:w-12 md:h-12 bg-white/10 rounded-full animate-bounce" style={{ animationDuration: "4s", animationDelay: "1s" }} />
         <div className="absolute top-1/3 right-1/4 w-4 h-4 md:w-6 md:h-6 bg-white/20 rounded-full animate-bounce" style={{ animationDuration: "2.5s" }} />
         <div className="absolute bottom-20 right-10 w-8 h-8 md:w-10 md:h-10 bg-white/10 rounded-full animate-bounce" style={{ animationDuration: "3.5s", animationDelay: "0.3s" }} />
+      </div>
+
+      {/* Clock */}
+      <div className="absolute top-6 right-6 text-white text-right select-none">
+        <p className="text-2xl font-bold font-mono tracking-widest">
+          {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+        </p>
+        <p className="text-xs text-white/70 capitalize">
+          {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+        </p>
       </div>
 
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden mx-4">
