@@ -11,6 +11,7 @@ import { ServicosPage } from "./pages/ServicosPage";
 import { ServicosGerenciamentoPage } from "./pages/ServicosGerenciamentoPage";
 import { PedidosPage } from "./pages/PedidosPage";
 import { FuncionariosPage } from "./pages/FuncionariosPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,7 +25,15 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<Navigate to="/clientes" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/clientes"
               element={
