@@ -60,6 +60,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CupomImpressao } from "@/components/CupomImpressao";
+import lolanaLogo from "@/assets/lolana.png";
+
+const ENDERECO_LOLANA = "Rua Cinco n°752 Vila Garbi (esquina com Av. 6)";
 
 const statusConfig: Record<
   StatusPedido,
@@ -208,7 +211,7 @@ export const PedidosPage = () => {
   const handleEnviarWhatsAppCupom = () => {
     const pedido = printDialog.pedido;
     if (!pedido) return;
-    const mensagem = gerarTextoCupom(pedido, false);
+    const mensagem = gerarTextoCupom(pedido, false, true);
     const telefone = pedido.cliente_telefone.replace(/\D/g, "");
     window.open(
       `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`,
@@ -217,7 +220,11 @@ export const PedidosPage = () => {
     setPrintDialog({ open: false, pedido: null });
   };
 
-  const gerarTextoCupom = (pedido: PedidoDB, comEmojis = false) => {
+  const gerarTextoCupom = (
+    pedido: PedidoDB,
+    comEmojis = false,
+    incluirLogoNaMensagem = false,
+  ) => {
     const itens = pedido.itens
       .map(
         (i) =>
@@ -253,7 +260,10 @@ export const PedidosPage = () => {
           total: "",
         };
 
+    const logoUrl = new URL(lolanaLogo, window.location.origin).toString();
     let texto = `${prefixo.loja}LOLANA LAVANDERIA\n`;
+    if (incluirLogoNaMensagem) texto += `Logo: ${logoUrl}\n`;
+    texto += `Endereco: ${ENDERECO_LOLANA}\n`;
     texto += `--------------------------------\n`;
     texto += `${prefixo.pedido}Pedido #${pedido.numero}\n\n`;
     texto += `${prefixo.cliente}Cliente: ${pedido.cliente_nome}\n`;
@@ -295,14 +305,36 @@ export const PedidosPage = () => {
   const handleBaixarPdfCupom = () => {
     const pedido = printDialog.pedido;
     if (!pedido) return;
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    const texto = gerarTextoCupom(pedido);
-    const linhas = doc.splitTextToSize(texto, 515);
-    doc.text(linhas, 40, 40);
-    doc.save(`cupom_pedido_${pedido.numero}.pdf`);
-    toast.success("Arquivo PDF baixado!");
+    const gerarPdf = async () => {
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+
+      const carregarLogoDataUrl = async () => {
+        const response = await fetch(lolanaLogo);
+        const blob = await response.blob();
+        return await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.readAsDataURL(blob);
+        });
+      };
+
+      try {
+        const logoDataUrl = await carregarLogoDataUrl();
+        doc.addImage(logoDataUrl, "PNG", 40, 30, 44, 44);
+      } catch {
+        // Se falhar a logo, o PDF ainda e gerado com os dados do cupom.
+      }
+
+      const texto = gerarTextoCupom(pedido);
+      const linhas = doc.splitTextToSize(texto, 515);
+      doc.text(linhas, 40, 90);
+      doc.save(`cupom_pedido_${pedido.numero}.pdf`);
+      toast.success("Arquivo PDF baixado!");
+    };
+
+    void gerarPdf();
   };
 
   const handlePrint = () => {
