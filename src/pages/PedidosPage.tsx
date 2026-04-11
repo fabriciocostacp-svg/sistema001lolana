@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import DOMPurify from "dompurify";
+import jsPDF from "jspdf";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,8 @@ import {
   DollarSign,
   Download,
   Send,
+  FileText,
+  FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CupomImpressao } from "@/components/CupomImpressao";
@@ -205,10 +208,20 @@ export const PedidosPage = () => {
   const handleEnviarWhatsAppCupom = () => {
     const pedido = printDialog.pedido;
     if (!pedido) return;
+    const mensagem = gerarTextoCupom(pedido, true);
+    const telefone = pedido.cliente_telefone.replace(/\D/g, "");
+    window.open(
+      `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`,
+      "_blank",
+    );
+    setPrintDialog({ open: false, pedido: null });
+  };
+
+  const gerarTextoCupom = (pedido: PedidoDB, comEmojis = false) => {
     const itens = pedido.itens
       .map(
         (i) =>
-          `  • ${i.quantidade}x ${i.servico.nome} — ${formatCurrency(i.servico.preco * i.quantidade)}`,
+          `  - ${i.quantidade}x ${i.servico.nome} - ${formatCurrency(i.servico.preco * i.quantidade)}`,
       )
       .join("\n");
     const desconto = Number(pedido.desconto_percentual) || 0;
@@ -218,28 +231,78 @@ export const PedidosPage = () => {
       (acc, i) => acc + i.servico.preco * i.quantidade,
       0,
     );
-    let mensagem = `🧺 *LOLANA LAVANDERIA*\n`;
-    mensagem += `━━━━━━━━━━━━━━━━━━━\n`;
-    mensagem += `📋 *Pedido #${pedido.numero}*\n\n`;
-    mensagem += `👤 *Cliente:* ${pedido.cliente_nome}\n`;
-    if (printCpfCnpj) mensagem += `📄 *CPF/CNPJ:* ${printCpfCnpj}\n`;
-    mensagem += `\n*Itens:*\n${itens}\n\n`;
-    if (desconto > 0)
-      mensagem += `🏷️ *Subtotal:* ${formatCurrency(subtotal)}\n   *Desconto (${desconto}%):* -${formatCurrency((subtotal * desconto) / 100)}\n`;
+    const prefixo = comEmojis
+      ? {
+          loja: "🧺 ",
+          pedido: "📋 ",
+          cliente: "👤 ",
+          doc: "📄 ",
+          subtotal: "🏷️ ",
+          desconto: "🏷️ ",
+          entrega: "🚚 ",
+          total: "💰 ",
+        }
+      : {
+          loja: "",
+          pedido: "",
+          cliente: "",
+          doc: "",
+          subtotal: "",
+          desconto: "",
+          entrega: "",
+          total: "",
+        };
+
+    let texto = `${prefixo.loja}LOLANA LAVANDERIA\n`;
+    texto += `--------------------------------\n`;
+    texto += `${prefixo.pedido}Pedido #${pedido.numero}\n\n`;
+    texto += `${prefixo.cliente}Cliente: ${pedido.cliente_nome}\n`;
+    texto += `Telefone: ${pedido.cliente_telefone}\n`;
+    if (printCpfCnpj) texto += `${prefixo.doc}CPF/CNPJ: ${printCpfCnpj}\n`;
+    texto += `Data: ${formatDate(pedido.created_at)}\n\n`;
+    texto += `Itens:\n${itens}\n\n`;
+
+    if (desconto > 0) {
+      texto += `${prefixo.subtotal}Subtotal: ${formatCurrency(subtotal)}\n`;
+      texto += `${prefixo.desconto}Desconto (${desconto}%): -${formatCurrency((subtotal * desconto) / 100)}\n`;
+    }
     if (descontoValor > 0)
-      mensagem += `🏷️ *Desconto:* -${formatCurrency(descontoValor)}\n`;
+      texto += `${prefixo.desconto}Desconto: -${formatCurrency(descontoValor)}\n`;
     if (taxaEntrega > 0)
-      mensagem += `🚚 *Entrega:* +${formatCurrency(taxaEntrega)}\n`;
-    mensagem += `━━━━━━━━━━━━━━━━━━━\n`;
-    mensagem += `💰 *Total: ${formatCurrency(pedido.valor_total)}*\n\n`;
-    mensagem += `📞 Contato: (19) 99757-9086\n`;
-    mensagem += `Obrigado pela preferência! 😊`;
-    const telefone = pedido.cliente_telefone.replace(/\D/g, "");
-    window.open(
-      `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`,
-      "_blank",
-    );
-    setPrintDialog({ open: false, pedido: null });
+      texto += `${prefixo.entrega}Entrega: +${formatCurrency(taxaEntrega)}\n`;
+
+    texto += `--------------------------------\n`;
+    texto += `${prefixo.total}Total: ${formatCurrency(pedido.valor_total)}\n\n`;
+    texto += `Contato: (19) 99757-9086\n`;
+    texto += `Obrigado pela preferencia!`;
+    return texto;
+  };
+
+  const handleBaixarTxtCupom = () => {
+    const pedido = printDialog.pedido;
+    if (!pedido) return;
+    const texto = gerarTextoCupom(pedido);
+    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cupom_pedido_${pedido.numero}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Arquivo TXT baixado!");
+  };
+
+  const handleBaixarPdfCupom = () => {
+    const pedido = printDialog.pedido;
+    if (!pedido) return;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    doc.setFont("courier", "normal");
+    doc.setFontSize(10);
+    const texto = gerarTextoCupom(pedido);
+    const linhas = doc.splitTextToSize(texto, 515);
+    doc.text(linhas, 40, 40);
+    doc.save(`cupom_pedido_${pedido.numero}.pdf`);
+    toast.success("Arquivo PDF baixado!");
   };
 
   const handlePrint = () => {
@@ -855,6 +918,22 @@ export const PedidosPage = () => {
               className="rounded-xl"
             >
               Cancelar
+            </Button>
+            <Button
+              onClick={handleBaixarTxtCupom}
+              variant="outline"
+              className="rounded-xl gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Baixar TXT
+            </Button>
+            <Button
+              onClick={handleBaixarPdfCupom}
+              variant="outline"
+              className="rounded-xl gap-2"
+            >
+              <FileDown className="h-4 w-4" />
+              Baixar PDF
             </Button>
             <Button
               onClick={handleEnviarWhatsAppCupom}
