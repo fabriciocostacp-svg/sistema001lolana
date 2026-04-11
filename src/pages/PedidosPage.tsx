@@ -242,46 +242,6 @@ export const PedidosPage = () => {
     setPrintDialog({ open: false, pedido: null });
   };
 
-  const handleEnviarWhatsAppCupom = () => {
-    const pedido = printDialog.pedido;
-    if (!pedido) return;
-    const itens = pedido.itens
-      .map(
-        (i) =>
-          `  • ${i.quantidade}x ${i.servico.nome} — ${formatCurrency(i.servico.preco * i.quantidade)}`,
-      )
-      .join("\n");
-    const desconto = Number(pedido.desconto_percentual) || 0;
-    const descontoValor = Number(pedido.desconto_valor) || 0;
-    const taxaEntrega = Number(pedido.taxa_entrega) || 0;
-    const subtotal = pedido.itens.reduce(
-      (acc, i) => acc + i.servico.preco * i.quantidade,
-      0,
-    );
-    let mensagem = `🧺 *LOLANA LAVANDERIA*\n`;
-    mensagem += `━━━━━━━━━━━━━━━━━━━\n`;
-    mensagem += `📋 *Pedido #${pedido.numero}*\n\n`;
-    mensagem += `👤 *Cliente:* ${pedido.cliente_nome}\n`;
-    if (printCpfCnpj) mensagem += `📄 *CPF/CNPJ:* ${printCpfCnpj}\n`;
-    mensagem += `\n*Itens:*\n${itens}\n\n`;
-    if (desconto > 0)
-      mensagem += `🏷️ *Subtotal:* ${formatCurrency(subtotal)}\n   *Desconto (${desconto}%):* -${formatCurrency((subtotal * desconto) / 100)}\n`;
-    if (descontoValor > 0)
-      mensagem += `🏷️ *Desconto:* -${formatCurrency(descontoValor)}\n`;
-    if (taxaEntrega > 0)
-      mensagem += `🚚 *Entrega:* +${formatCurrency(taxaEntrega)}\n`;
-    mensagem += `━━━━━━━━━━━━━━━━━━━\n`;
-    mensagem += `💰 *Total: ${formatCurrency(pedido.valor_total)}*\n\n`;
-    mensagem += `📞 Contato: (19) 99757-9086\n`;
-    mensagem += `Obrigado pela preferência! 😊`;
-    const telefone = pedido.cliente_telefone.replace(/\D/g, "");
-    window.open(
-      `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`,
-      "_blank",
-    );
-    setPrintDialog({ open: false, pedido: null });
-  };
-
   const handlePrint = () => {
     if (cupomRef.current) {
       // SECURITY: Sanitize HTML content before writing to print window
