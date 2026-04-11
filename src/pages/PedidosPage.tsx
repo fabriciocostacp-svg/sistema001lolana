@@ -208,7 +208,7 @@ export const PedidosPage = () => {
   const handleEnviarWhatsAppCupom = () => {
     const pedido = printDialog.pedido;
     if (!pedido) return;
-    const mensagem = gerarTextoCupom(pedido, true);
+    const mensagem = gerarTextoCupom(pedido, false);
     const telefone = pedido.cliente_telefone.replace(/\D/g, "");
     window.open(
       `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`,
