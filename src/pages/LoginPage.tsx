@@ -28,7 +28,9 @@ export const LoginPage = () => {
 
   // Forgot password states
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotStep, setForgotStep] = useState<"phone" | "token" | "newPassword">("phone");
+  const [forgotStep, setForgotStep] = useState<
+    "phone" | "token" | "newPassword"
+  >("phone");
   const [forgotPhone, setForgotPhone] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -38,9 +40,12 @@ export const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate input
-    const result = loginSchema.safeParse({ usuario: username, senha: password });
+    const result = loginSchema.safeParse({
+      usuario: username,
+      senha: password,
+    });
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
@@ -60,7 +65,9 @@ export const LoginPage = () => {
 
   const handleForgotPassword = async () => {
     // Validate phone
-    const result = resetPasswordRequestSchema.safeParse({ telefone: forgotPhone });
+    const result = resetPasswordRequestSchema.safeParse({
+      telefone: forgotPhone,
+    });
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
@@ -70,7 +77,7 @@ export const LoginPage = () => {
 
     try {
       const response = await apiRequestPasswordReset(forgotPhone);
-      
+
       if (response.success) {
         setResetToken(response.resetToken);
         setFoundUserName(response.nome);
@@ -79,7 +86,8 @@ export const LoginPage = () => {
         toast.success("Token de redefinição gerado!");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao buscar usuário!";
+      const message =
+        error instanceof Error ? error.message : "Erro ao buscar usuário!";
       toast.error(message);
     }
 
@@ -96,14 +104,17 @@ export const LoginPage = () => {
 
     try {
       const response = await apiResetPassword(resetToken, newPassword);
-      
+
       if (response.success) {
-        toast.success("Senha alterada com sucesso! Faça login com a nova senha.");
+        toast.success(
+          "Senha alterada com sucesso! Faça login com a nova senha.",
+        );
         setForgotOpen(false);
         resetForgotDialog();
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao alterar senha!";
+      const message =
+        error instanceof Error ? error.message : "Erro ao alterar senha!";
       toast.error(message);
     }
 
@@ -130,29 +141,53 @@ export const LoginPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-[hsl(210,100%,50%)] via-[hsl(210,100%,45%)] to-[hsl(215,70%,25%)] flex items-center justify-center p-4">
       {/* Bubbles decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-full animate-bounce" style={{ animationDuration: "3s" }} />
-        <div className="absolute top-40 right-20 w-6 h-6 md:w-8 md:h-8 bg-white/15 rounded-full animate-bounce" style={{ animationDuration: "2s", animationDelay: "0.5s" }} />
-        <div className="absolute bottom-32 left-1/4 w-8 h-8 md:w-12 md:h-12 bg-white/10 rounded-full animate-bounce" style={{ animationDuration: "4s", animationDelay: "1s" }} />
-        <div className="absolute top-1/3 right-1/4 w-4 h-4 md:w-6 md:h-6 bg-white/20 rounded-full animate-bounce" style={{ animationDuration: "2.5s" }} />
-        <div className="absolute bottom-20 right-10 w-8 h-8 md:w-10 md:h-10 bg-white/10 rounded-full animate-bounce" style={{ animationDuration: "3.5s", animationDelay: "0.3s" }} />
+        <div
+          className="absolute top-20 left-10 w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-full animate-bounce"
+          style={{ animationDuration: "3s" }}
+        />
+        <div
+          className="absolute top-40 right-20 w-6 h-6 md:w-8 md:h-8 bg-white/15 rounded-full animate-bounce"
+          style={{ animationDuration: "2s", animationDelay: "0.5s" }}
+        />
+        <div
+          className="absolute bottom-32 left-1/4 w-8 h-8 md:w-12 md:h-12 bg-white/10 rounded-full animate-bounce"
+          style={{ animationDuration: "4s", animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/3 right-1/4 w-4 h-4 md:w-6 md:h-6 bg-white/20 rounded-full animate-bounce"
+          style={{ animationDuration: "2.5s" }}
+        />
+        <div
+          className="absolute bottom-20 right-10 w-8 h-8 md:w-10 md:h-10 bg-white/10 rounded-full animate-bounce"
+          style={{ animationDuration: "3.5s", animationDelay: "0.3s" }}
+        />
       </div>
 
       {/* Clock */}
       <div className="absolute top-6 right-6 text-white text-right select-none">
         <p className="text-2xl font-bold font-mono tracking-widest">
-          {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+          {now.toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })}
         </p>
         <p className="text-xs text-white/70 capitalize">
-          {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+          {now.toLocaleDateString("pt-BR", {
+            weekday: "long",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          })}
         </p>
       </div>
 
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden mx-4">
         <CardHeader className="text-center pb-2 pt-6 md:pt-8">
           <div className="flex justify-center mb-4">
-            <img 
-              src={lolanaLogo} 
-              alt="Lolana Lavanderia" 
+            <img
+              src={lolanaLogo}
+              alt="Lolana Lavanderia"
               className="w-28 h-28 md:w-40 md:h-40 object-contain drop-shadow-lg"
             />
           </div>
@@ -233,10 +268,13 @@ export const LoginPage = () => {
       </Card>
 
       {/* Forgot Password Dialog */}
-      <Dialog open={forgotOpen} onOpenChange={(open) => {
-        setForgotOpen(open);
-        if (!open) resetForgotDialog();
-      }}>
+      <Dialog
+        open={forgotOpen}
+        onOpenChange={(open) => {
+          setForgotOpen(open);
+          if (!open) resetForgotDialog();
+        }}
+      >
         <DialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[hsl(215,70%,25%)] flex items-center gap-2">
@@ -266,7 +304,12 @@ export const LoginPage = () => {
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
                 <DialogClose asChild>
-                  <Button variant="outline" className="rounded-xl w-full sm:w-auto">Cancelar</Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl w-full sm:w-auto"
+                  >
+                    Cancelar
+                  </Button>
                 </DialogClose>
                 <Button
                   onClick={handleForgotPassword}
@@ -278,24 +321,31 @@ export const LoginPage = () => {
               </DialogFooter>
             </div>
           )}
-          
+
           {forgotStep === "token" && (
             <div className="space-y-4 py-4">
               <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                <p className="text-sm text-green-800 font-medium mb-2">Usuário encontrado!</p>
+                <p className="text-sm text-green-800 font-medium mb-2">
+                  Usuário encontrado!
+                </p>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Nome:</strong> {foundUserName}</p>
-                  <p><strong>Usuário:</strong> {foundUserUsuario}</p>
+                  <p>
+                    <strong>Nome:</strong> {foundUserName}
+                  </p>
+                  <p>
+                    <strong>Usuário:</strong> {foundUserUsuario}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <p className="text-sm text-blue-800 font-medium mb-2 flex items-center gap-2">
                   <Key className="h-4 w-4" />
                   Token de Redefinição
                 </p>
                 <p className="text-xs text-blue-600 mb-2">
-                  Em um sistema real, este token seria enviado por SMS. Por agora, use-o diretamente:
+                  Em um sistema real, este token seria enviado por SMS. Por
+                  agora, use-o diretamente:
                 </p>
                 <code className="block bg-white p-2 rounded text-sm font-mono break-all">
                   {resetToken}
@@ -316,7 +366,9 @@ export const LoginPage = () => {
                     maxLength={100}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">Mínimo 4 caracteres</p>
+                <p className="text-xs text-muted-foreground">
+                  Mínimo 4 caracteres
+                </p>
               </div>
 
               <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
