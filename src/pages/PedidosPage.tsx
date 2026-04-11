@@ -866,7 +866,7 @@ export const PedidosPage = () => {
       >
         <DialogContent className="rounded-2xl max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cupom do Pedido</DialogTitle>
+            <DialogTitle>Cupom do Pedido - Escolha a ação</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
