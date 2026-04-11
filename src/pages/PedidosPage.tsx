@@ -262,8 +262,8 @@ export const PedidosPage = () => {
 
     const logoUrl = new URL(lolanaLogo, window.location.origin).toString();
     let texto = `${prefixo.loja}LOLANA LAVANDERIA\n`;
-    if (incluirLogoNaMensagem) texto += `Logo: ${logoUrl}\n`;
-    texto += `Endereco: ${ENDERECO_LOLANA}\n`;
+    if (incluirLogoNaMensagem) texto += `${logoUrl}\n`;
+    texto += `Endereço da Lavanderia: ${ENDERECO_LOLANA}\n`;
     texto += `--------------------------------\n`;
     texto += `${prefixo.pedido}Pedido #${pedido.numero}\n\n`;
     texto += `${prefixo.cliente}Cliente: ${pedido.cliente_nome}\n`;
