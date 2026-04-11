@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -40,14 +41,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useClientes, ClienteDB } from "@/hooks/useClientes";
-import { Plus, Pencil, Trash2, Users, Loader2, Building2, User, AlertTriangle } from "lucide-react";
+import { usePedidos } from "@/hooks/usePedidos";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  Loader2,
+  Building2,
+  User,
+  AlertTriangle,
+  History,
+  ClipboardList,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const ClientesPage = () => {
-  const { clientes, isLoading, addCliente, updateCliente, deleteCliente } = useClientes();
+  const { clientes, isLoading, addCliente, updateCliente, deleteCliente } =
+    useClientes();
+  const { pedidos: todosPedidos } = usePedidos();
+  const [historicoCliente, setHistoricoCliente] = useState<ClienteDB | null>(
+    null,
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<ClienteDB | null>(null);
-  const [tipoCliente, setTipoCliente] = useState<"pessoa" | "empresa">("pessoa");
+  const [tipoCliente, setTipoCliente] = useState<"pessoa" | "empresa">(
+    "pessoa",
+  );
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -57,7 +77,9 @@ export const ClientesPage = () => {
   });
 
   // Duplicate warning state
-  const [duplicateWarning, setDuplicateWarning] = useState<ClienteDB | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<ClienteDB | null>(
+    null,
+  );
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   const resetForm = () => {
@@ -69,17 +91,22 @@ export const ClientesPage = () => {
 
   const checkDuplicate = () => {
     if (editingCliente) return null;
-    
+
     const duplicate = clientes.find(
       (c) =>
         c.nome.toLowerCase().trim() === formData.nome.toLowerCase().trim() &&
-        c.endereco.toLowerCase().trim() === formData.endereco.toLowerCase().trim()
+        c.endereco.toLowerCase().trim() ===
+          formData.endereco.toLowerCase().trim(),
     );
     return duplicate || null;
   };
 
   const handleSubmit = () => {
-    if (!formData.nome.trim() || !formData.telefone.trim() || !formData.endereco.trim()) {
+    if (
+      !formData.nome.trim() ||
+      !formData.telefone.trim() ||
+      !formData.endereco.trim()
+    ) {
       toast.error("Nome, telefone e endereço são obrigatórios!");
       return;
     }
@@ -112,7 +139,7 @@ export const ClientesPage = () => {
 
   const handleConfirmDuplicate = () => {
     setShowDuplicateDialog(false);
-    
+
     const clienteData = {
       nome: formData.nome,
       telefone: formData.telefone,
@@ -149,6 +176,9 @@ export const ClientesPage = () => {
     return null;
   };
 
+  const formatCurrency = (value: number) =>
+    value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   if (isLoading) {
     return (
       <MainLayout title="Clientes">
@@ -165,12 +195,17 @@ export const ClientesPage = () => {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-[hsl(210,100%,50%)] to-[hsl(215,70%,35%)] text-white rounded-t-2xl">
           <div className="flex items-center gap-3">
             <Users className="h-5 w-5 md:h-6 md:w-6" />
-            <CardTitle className="text-white text-lg md:text-xl">Cadastro de Clientes</CardTitle>
+            <CardTitle className="text-white text-lg md:text-xl">
+              Cadastro de Clientes
+            </CardTitle>
           </div>
-          <Dialog open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) resetForm();
-          }}>
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) resetForm();
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="gap-2 bg-white text-[hsl(210,100%,50%)] hover:bg-white/90 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
@@ -187,7 +222,12 @@ export const ClientesPage = () => {
                 {/* Tipo de Cliente */}
                 <div className="space-y-2">
                   <Label>Tipo de Cliente</Label>
-                  <Select value={tipoCliente} onValueChange={(v: "pessoa" | "empresa") => setTipoCliente(v)}>
+                  <Select
+                    value={tipoCliente}
+                    onValueChange={(v: "pessoa" | "empresa") =>
+                      setTipoCliente(v)
+                    }
+                  >
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
@@ -209,10 +249,16 @@ export const ClientesPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="nome">Nome {tipoCliente === "empresa" ? "da Empresa" : ""} *</Label>
+                  <Label htmlFor="nome">
+                    Nome {tipoCliente === "empresa" ? "da Empresa" : ""} *
+                  </Label>
                   <Input
                     id="nome"
-                    placeholder={tipoCliente === "empresa" ? "Nome da empresa" : "Digite o nome completo"}
+                    placeholder={
+                      tipoCliente === "empresa"
+                        ? "Nome da empresa"
+                        : "Digite o nome completo"
+                    }
                     value={formData.nome}
                     onChange={(e) =>
                       setFormData({ ...formData, nome: e.target.value })
@@ -277,10 +323,15 @@ export const ClientesPage = () => {
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2">
                 <DialogClose asChild>
-                  <Button variant="outline" className="rounded-xl w-full sm:w-auto">Cancelar</Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl w-full sm:w-auto"
+                  >
+                    Cancelar
+                  </Button>
                 </DialogClose>
-                <Button 
-                  onClick={handleSubmit} 
+                <Button
+                  onClick={handleSubmit}
                   className="rounded-xl bg-gradient-to-r from-[hsl(210,100%,50%)] to-[hsl(215,70%,35%)] w-full sm:w-auto"
                   disabled={addCliente.isPending || updateCliente.isPending}
                 >
@@ -306,12 +357,20 @@ export const ClientesPage = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[hsl(210,100%,50%)] text-sm">#{cliente.numero}</span>
-                          {cliente.cnpj && <Building2 className="h-3 w-3 text-muted-foreground" />}
+                          <span className="font-mono font-bold text-[hsl(210,100%,50%)] text-sm">
+                            #{cliente.numero}
+                          </span>
+                          {cliente.cnpj && (
+                            <Building2 className="h-3 w-3 text-muted-foreground" />
+                          )}
                         </div>
-                        <p className="font-medium text-foreground">{cliente.nome}</p>
+                        <p className="font-medium text-foreground">
+                          {cliente.nome}
+                        </p>
                         {formatCpfCnpj(cliente.cpf, cliente.cnpj) && (
-                          <p className="text-xs text-muted-foreground">{formatCpfCnpj(cliente.cpf, cliente.cnpj)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCpfCnpj(cliente.cpf, cliente.cnpj)}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -335,14 +394,19 @@ export const ClientesPage = () => {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)]">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Confirmar Exclusão
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Tem certeza que deseja excluir o cliente "{cliente.nome}"?
-                                Esta ação não pode ser desfeita.
+                                Tem certeza que deseja excluir o cliente "
+                                {cliente.nome}"? Esta ação não pode ser
+                                desfeita.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                              <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                              <AlertDialogCancel className="rounded-xl">
+                                Cancelar
+                              </AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDelete(cliente.id)}
                                 className="bg-destructive hover:bg-destructive/90 rounded-xl"
@@ -352,6 +416,15 @@ export const ClientesPage = () => {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setHistoricoCliente(cliente)}
+                          className="hover:bg-[hsl(142,76%,36%)]/20 hover:text-[hsl(142,76%,36%)] rounded-xl h-8 w-8"
+                          title="Ver pedidos"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
@@ -367,23 +440,40 @@ export const ClientesPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-[hsl(210,100%,97%)]">
-                      <TableHead className="w-24 font-bold text-[hsl(215,70%,25%)]">ID</TableHead>
-                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">Nome</TableHead>
-                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">CPF/CNPJ</TableHead>
-                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">Telefone</TableHead>
-                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">Endereço</TableHead>
-                      <TableHead className="w-32 text-center font-bold text-[hsl(215,70%,25%)]">Ações</TableHead>
+                      <TableHead className="w-24 font-bold text-[hsl(215,70%,25%)]">
+                        ID
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        Nome
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        CPF/CNPJ
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        Telefone
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        Endereço
+                      </TableHead>
+                      <TableHead className="w-32 text-center font-bold text-[hsl(215,70%,25%)]">
+                        Ações
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {clientes.map((cliente) => (
-                      <TableRow key={cliente.id} className="hover:bg-[hsl(210,100%,98%)]">
+                      <TableRow
+                        key={cliente.id}
+                        className="hover:bg-[hsl(210,100%,98%)]"
+                      >
                         <TableCell className="font-mono font-bold text-[hsl(210,100%,50%)]">
                           #{cliente.numero}
                         </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            {cliente.cnpj && <Building2 className="h-4 w-4 text-muted-foreground" />}
+                            {cliente.cnpj && (
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                            )}
                             {cliente.nome}
                           </div>
                         </TableCell>
@@ -414,14 +504,19 @@ export const ClientesPage = () => {
                               </AlertDialogTrigger>
                               <AlertDialogContent className="rounded-2xl">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                  <AlertDialogTitle>
+                                    Confirmar Exclusão
+                                  </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Tem certeza que deseja excluir o cliente "{cliente.nome}"?
-                                    Esta ação não pode ser desfeita.
+                                    Tem certeza que deseja excluir o cliente "
+                                    {cliente.nome}"? Esta ação não pode ser
+                                    desfeita.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                                  <AlertDialogCancel className="rounded-xl">
+                                    Cancelar
+                                  </AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => handleDelete(cliente.id)}
                                     className="bg-destructive hover:bg-destructive/90 rounded-xl"
@@ -431,6 +526,15 @@ export const ClientesPage = () => {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setHistoricoCliente(cliente)}
+                              className="hover:bg-[hsl(142,76%,36%)]/20 hover:text-[hsl(142,76%,36%)] rounded-xl"
+                              title="Ver pedidos"
+                            >
+                              <History className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -443,8 +547,108 @@ export const ClientesPage = () => {
         </CardContent>
       </Card>
 
+      {/* Histórico de Pedidos do Cliente */}
+      <Dialog
+        open={historicoCliente !== null}
+        onOpenChange={(open) => {
+          if (!open) setHistoricoCliente(null);
+        }}
+      >
+        <DialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[hsl(215,70%,25%)]">
+              <History className="h-5 w-5" />
+              Pedidos de {historicoCliente?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {(() => {
+              const pedidosCliente = todosPedidos.filter(
+                (p) => p.cliente_id === historicoCliente?.id,
+              );
+              if (pedidosCliente.length === 0) {
+                return (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>Nenhum pedido encontrado para este cliente</p>
+                  </div>
+                );
+              }
+              return (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[hsl(210,100%,97%)]">
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        Pedido
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        Itens
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)] text-right">
+                        Valor
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)] text-center">
+                        Status
+                      </TableHead>
+                      <TableHead className="font-bold text-[hsl(215,70%,25%)]">
+                        Data
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pedidosCliente.map((pedido) => (
+                      <TableRow key={pedido.id}>
+                        <TableCell className="font-mono font-bold text-[hsl(210,100%,50%)]">
+                          #{pedido.numero}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {pedido.itens.map((item, i) => (
+                            <span key={i}>
+                              {item.quantidade}x {item.servico.nome}
+                              {i < pedido.itens.length - 1 ? ", " : ""}
+                            </span>
+                          ))}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold">
+                          {formatCurrency(pedido.valor_total)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            className={`${
+                              pedido.status === "pronto"
+                                ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)]"
+                                : pedido.status === "passando"
+                                  ? "bg-[hsl(38,92%,50%)]/10 text-[hsl(38,92%,50%)]"
+                                  : "bg-[hsl(210,100%,50%)]/10 text-[hsl(210,100%,50%)]"
+                            } border-0`}
+                          >
+                            {pedido.status === "pronto"
+                              ? "Pronto"
+                              : pedido.status === "passando"
+                                ? "Passando"
+                                : "Lavando"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(pedido.created_at).toLocaleDateString(
+                            "pt-BR",
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Duplicate Client Warning Dialog */}
-      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+      <AlertDialog
+        open={showDuplicateDialog}
+        onOpenChange={setShowDuplicateDialog}
+      >
         <AlertDialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
@@ -452,19 +656,31 @@ export const ClientesPage = () => {
               Cliente Já Existe
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              <p>Já existe um cliente cadastrado com o mesmo nome e endereço:</p>
+              <p>
+                Já existe um cliente cadastrado com o mesmo nome e endereço:
+              </p>
               {duplicateWarning && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
-                  <p><strong>Nome:</strong> {duplicateWarning.nome}</p>
-                  <p><strong>Endereço:</strong> {duplicateWarning.endereco}</p>
-                  <p><strong>Telefone:</strong> {duplicateWarning.telefone}</p>
+                  <p>
+                    <strong>Nome:</strong> {duplicateWarning.nome}
+                  </p>
+                  <p>
+                    <strong>Endereço:</strong> {duplicateWarning.endereco}
+                  </p>
+                  <p>
+                    <strong>Telefone:</strong> {duplicateWarning.telefone}
+                  </p>
                 </div>
               )}
-              <p className="font-medium">Deseja criar outro cliente mesmo assim?</p>
+              <p className="font-medium">
+                Deseja criar outro cliente mesmo assim?
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDuplicate}
               className="bg-amber-500 hover:bg-amber-600 rounded-xl"
