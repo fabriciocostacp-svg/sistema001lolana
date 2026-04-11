@@ -7,8 +7,8 @@ export const servicosFixos: Servico[] = [
   { id: "kg-3", nome: "Kg lavar ou passar", categoria: "Serviços por KG", preco: 22.00 },
   
   // Peças de Cama
-  { id: "cama-1", nome: "Edredom solteiro", categoria: "Peças de Cama", preco: 30.00 },
-  { id: "cama-2", nome: "Edredom casal", categoria: "Peças de Cama", preco: 42.00 },
+  { id: "cama-1", nome: "Edredom de solteiro", categoria: "Peças de Cama", preco: 30.00 },
+  { id: "cama-2", nome: "Edredom de casal", categoria: "Peças de Cama", preco: 42.00 },
   { id: "cama-3", nome: "Coberdrom", categoria: "Peças de Cama", preco: 50.00 },
   
   // Camisas
