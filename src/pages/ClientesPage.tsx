@@ -55,6 +55,25 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CEPS_CIDADE } from "@/data/cepsCidade";
+
+const onlyDigits = (value: string) => value.replace(/\D/g, "");
+
+const formatCep = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const enderecoBaseDaLista = (rua: string, bairro?: string) =>
+  bairro?.trim() ? `${rua}, ${bairro.trim()}` : rua;
 
 export const ClientesPage = () => {
   const { clientes, isLoading, addCliente, updateCliente, deleteCliente } =
@@ -72,6 +91,7 @@ export const ClientesPage = () => {
     nome: "",
     telefone: "",
     endereco: "",
+    cep: "",
     cpf: "",
     cnpj: "",
   });
@@ -83,10 +103,89 @@ export const ClientesPage = () => {
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   const resetForm = () => {
-    setFormData({ nome: "", telefone: "", endereco: "", cpf: "", cnpj: "" });
+    setFormData({
+      nome: "",
+      telefone: "",
+      endereco: "",
+      cep: "",
+      cpf: "",
+      cnpj: "",
+    });
     setEditingCliente(null);
     setTipoCliente("pessoa");
     setDuplicateWarning(null);
+  };
+
+  const enderecoComCep = (endereco: string, cep: string) => {
+    const enderecoLimpo = endereco.trim();
+    const cepFormatado = formatCep(cep);
+    if (!cepFormatado) return enderecoLimpo;
+    if (/\|\s*CEP:/i.test(enderecoLimpo)) {
+      return enderecoLimpo.replace(
+        /\|\s*CEP:\s*[\d-]+/i,
+        `| CEP: ${cepFormatado}`,
+      );
+    }
+    return `${enderecoLimpo} | CEP: ${cepFormatado}`;
+  };
+
+  const buscarCepPorRua = (rua: string) => {
+    const ruaNormalizada = normalizeText(rua);
+    if (ruaNormalizada.length < 3) return null;
+
+    const matchExato = CEPS_CIDADE.find(
+      (item) => normalizeText(item.rua) === ruaNormalizada,
+    );
+    if (matchExato) return matchExato;
+
+    return (
+      CEPS_CIDADE.find((item) =>
+        normalizeText(`${item.rua} ${item.bairro ?? ""}`).includes(
+          ruaNormalizada,
+        ),
+      ) ?? null
+    );
+  };
+
+  const buscarRuaPorCep = (cep: string) => {
+    const cepFormatado = formatCep(cep);
+    return (
+      CEPS_CIDADE.find((item) => formatCep(item.cep) === cepFormatado) ?? null
+    );
+  };
+
+  const preencherEnderecoViaCep = async (cep: string) => {
+    const digits = onlyDigits(cep);
+    if (digits.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      if (!response.ok) return;
+
+      const data = (await response.json()) as {
+        erro?: boolean;
+        logradouro?: string;
+        bairro?: string;
+      };
+
+      if (data.erro) return;
+
+      const ruaAtual = formData.endereco.split(",")[0]?.trim() ?? "";
+      const ruaNova = data.logradouro?.trim() ?? "";
+      const bairro = data.bairro?.trim() ?? "";
+
+      if (
+        !ruaNova ||
+        (ruaAtual && normalizeText(ruaAtual) === normalizeText(ruaNova))
+      ) {
+        return;
+      }
+
+      const enderecoBase = bairro ? `${ruaNova}, ${bairro}` : ruaNova;
+      setFormData((prev) => ({ ...prev, endereco: enderecoBase }));
+    } catch {
+      // Mantem o fluxo de cadastro mesmo sem consulta externa.
+    }
   };
 
   const checkDuplicate = () => {
@@ -96,7 +195,7 @@ export const ClientesPage = () => {
       (c) =>
         c.nome.toLowerCase().trim() === formData.nome.toLowerCase().trim() &&
         c.endereco.toLowerCase().trim() ===
-          formData.endereco.toLowerCase().trim(),
+          enderecoComCep(formData.endereco, formData.cep).toLowerCase().trim(),
     );
     return duplicate || null;
   };
@@ -122,7 +221,7 @@ export const ClientesPage = () => {
     const clienteData = {
       nome: formData.nome,
       telefone: formData.telefone,
-      endereco: formData.endereco,
+      endereco: enderecoComCep(formData.endereco, formData.cep),
       cpf: tipoCliente === "pessoa" ? formData.cpf : "",
       cnpj: tipoCliente === "empresa" ? formData.cnpj : "",
     };
@@ -143,7 +242,7 @@ export const ClientesPage = () => {
     const clienteData = {
       nome: formData.nome,
       telefone: formData.telefone,
-      endereco: formData.endereco,
+      endereco: enderecoComCep(formData.endereco, formData.cep),
       cpf: tipoCliente === "pessoa" ? formData.cpf : "",
       cnpj: tipoCliente === "empresa" ? formData.cnpj : "",
     };
@@ -154,11 +253,17 @@ export const ClientesPage = () => {
   };
 
   const handleEdit = (cliente: ClienteDB) => {
+    const cepMatch = cliente.endereco.match(/\|\s*CEP:\s*([\d-]+)/i);
+    const enderecoSemCep = cliente.endereco
+      .replace(/\|\s*CEP:\s*[\d-]+/i, "")
+      .trim();
+
     setEditingCliente(cliente);
     setFormData({
       nome: cliente.nome,
       telefone: cliente.telefone,
-      endereco: cliente.endereco,
+      endereco: enderecoSemCep,
+      cep: cepMatch?.[1] ?? "",
       cpf: cliente.cpf || "",
       cnpj: cliente.cnpj || "",
     });
@@ -309,16 +414,59 @@ export const ClientesPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="cep">CEP (opcional)</Label>
+                  <Input
+                    id="cep"
+                    placeholder="00000-000"
+                    value={formData.cep}
+                    onChange={(e) => {
+                      const cepDigitado = formatCep(e.target.value);
+                      const ruaEncontrada = buscarRuaPorCep(cepDigitado);
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        cep: cepDigitado,
+                        endereco:
+                          ruaEncontrada && !prev.endereco.trim()
+                            ? enderecoBaseDaLista(
+                                ruaEncontrada.rua,
+                                ruaEncontrada.bairro,
+                              )
+                            : prev.endereco,
+                      }));
+                    }}
+                    onBlur={() => {
+                      void preencherEnderecoViaCep(formData.cep);
+                    }}
+                    className="rounded-xl"
+                    maxLength={9}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="endereco">Endereço Completo *</Label>
                   <Input
                     id="endereco"
                     placeholder="Rua, Número, Bairro"
                     value={formData.endereco}
-                    onChange={(e) =>
-                      setFormData({ ...formData, endereco: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const enderecoDigitado = e.target.value;
+                      const ruaDigitada =
+                        enderecoDigitado.split(",")[0]?.trim() ?? "";
+                      const itemCep = buscarCepPorRua(ruaDigitada);
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        endereco: enderecoDigitado,
+                        cep: itemCep ? formatCep(itemCep.cep) : prev.cep,
+                      }));
+                    }}
                     className="rounded-xl"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Dica: ao digitar o CEP, a rua pode ser preenchida
+                    automaticamente. Ao digitar a rua, o CEP pode ser sugerido
+                    pela lista da cidade.
+                  </p>
                 </div>
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2">

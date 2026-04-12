@@ -13,11 +13,25 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Lock, User, HelpCircle, Phone, Key } from "lucide-react";
+import {
+  Lock,
+  User,
+  HelpCircle,
+  Phone,
+  Key,
+  CloudRain,
+  Thermometer,
+} from "lucide-react";
 import { toast } from "sonner";
 import { apiRequestPasswordReset, apiResetPassword } from "@/lib/api";
 import { loginSchema, resetPasswordRequestSchema } from "@/lib/validation";
 import lolanaLogo from "@/assets/lolana.png";
+
+interface WeatherState {
+  temperature: number;
+  rainChance: number;
+  precipitation: number;
+}
 
 export const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -122,10 +136,50 @@ export const LoginPage = () => {
   };
 
   const [now, setNow] = useState(new Date());
+  const [weather, setWeather] = useState<WeatherState | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const url =
+          "https://api.open-meteo.com/v1/forecast?latitude=-22.25&longitude=-47.82&current=temperature_2m,precipitation&daily=precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=1";
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Falha ao consultar clima");
+
+        const data = (await response.json()) as {
+          current?: { temperature_2m?: number; precipitation?: number };
+          daily?: { precipitation_probability_max?: number[] };
+        };
+
+        setWeather({
+          temperature: Number(data.current?.temperature_2m ?? 0),
+          precipitation: Number(data.current?.precipitation ?? 0),
+          rainChance: Number(
+            data.daily?.precipitation_probability_max?.[0] ?? 0,
+          ),
+        });
+      } catch {
+        setWeather(null);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    void fetchWeather();
+    const weatherTimer = setInterval(
+      () => {
+        void fetchWeather();
+      },
+      15 * 60 * 1000,
+    );
+
+    return () => clearInterval(weatherTimer);
   }, []);
 
   const resetForgotDialog = () => {
@@ -138,134 +192,152 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(210,100%,50%)] via-[hsl(210,100%,45%)] to-[hsl(215,70%,25%)] flex items-center justify-center p-4">
-      {/* Bubbles decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-20 left-10 w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-full animate-bounce"
-          style={{ animationDuration: "3s" }}
-        />
-        <div
-          className="absolute top-40 right-20 w-6 h-6 md:w-8 md:h-8 bg-white/15 rounded-full animate-bounce"
-          style={{ animationDuration: "2s", animationDelay: "0.5s" }}
-        />
-        <div
-          className="absolute bottom-32 left-1/4 w-8 h-8 md:w-12 md:h-12 bg-white/10 rounded-full animate-bounce"
-          style={{ animationDuration: "4s", animationDelay: "1s" }}
-        />
-        <div
-          className="absolute top-1/3 right-1/4 w-4 h-4 md:w-6 md:h-6 bg-white/20 rounded-full animate-bounce"
-          style={{ animationDuration: "2.5s" }}
-        />
-        <div
-          className="absolute bottom-20 right-10 w-8 h-8 md:w-10 md:h-10 bg-white/10 rounded-full animate-bounce"
-          style={{ animationDuration: "3.5s", animationDelay: "0.3s" }}
-        />
-      </div>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-[hsl(210,18%,93%)]">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[hsl(219,74%,18%)] via-[hsl(218,72%,17%)] to-[hsl(217,76%,22%)] text-white p-8 md:p-12 lg:p-16 flex flex-col justify-between">
+        <div className="absolute -top-10 -left-10 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute bottom-20 right-8 w-40 h-40 rounded-full bg-[hsl(210,100%,50%)]/20 blur-xl" />
 
-      {/* Clock */}
-      <div className="absolute top-6 right-6 text-white text-right select-none">
-        <p className="text-2xl font-bold font-mono tracking-widest">
-          {now.toLocaleTimeString("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })}
-        </p>
-        <p className="text-xs text-white/70 capitalize">
-          {now.toLocaleDateString("pt-BR", {
-            weekday: "long",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-      </div>
-
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden mx-4">
-        <CardHeader className="text-center pb-2 pt-6 md:pt-8">
-          <div className="flex justify-center mb-4">
+        <div className="relative flex flex-col items-center lg:items-start gap-8 mt-2 lg:mt-10">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-white/10 blur-sm scale-110" />
             <img
               src={lolanaLogo}
               alt="Lolana Lavanderia"
-              className="w-28 h-28 md:w-40 md:h-40 object-contain drop-shadow-lg"
+              className="relative w-28 h-28 md:w-36 md:h-36 object-contain rounded-2xl shadow-2xl"
             />
           </div>
-          <h1 className="text-xl md:text-2xl font-bold text-[hsl(215,70%,25%)]">
-            Bem-vindo!
-          </h1>
-          <p className="text-muted-foreground text-xs md:text-sm">
-            Faça login para acessar o sistema
-          </p>
-        </CardHeader>
-        <CardContent className="px-6 md:px-8 pb-6 md:pb-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-[hsl(215,70%,25%)]">
-                Usuário
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="username"
-                  placeholder="Digite seu usuário"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10 h-12 rounded-xl border-2 border-[hsl(210,100%,90%)] focus:border-[hsl(210,100%,50%)] transition-colors"
-                  required
-                  maxLength={100}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-[hsl(215,70%,25%)]">
-                Senha
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Digite sua senha"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-12 rounded-xl border-2 border-[hsl(210,100%,90%)] focus:border-[hsl(210,100%,50%)] transition-colors"
-                  required
-                  maxLength={100}
-                />
-              </div>
-            </div>
-            <Button
-              type="submit"
-              className="w-full h-12 rounded-xl text-lg font-semibold bg-gradient-to-r from-[hsl(210,100%,50%)] to-[hsl(215,70%,35%)] hover:from-[hsl(210,100%,45%)] hover:to-[hsl(215,70%,30%)] shadow-lg transition-all duration-300"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Entrando...
-                </span>
-              ) : (
-                "Entrar"
-              )}
-            </Button>
-          </form>
 
-          <div className="mt-4 text-center">
-            <Button
-              variant="link"
-              onClick={() => {
-                resetForgotDialog();
-                setForgotOpen(true);
-              }}
-              className="text-[hsl(210,100%,50%)] hover:text-[hsl(210,100%,40%)] gap-1"
-            >
-              <HelpCircle className="h-4 w-4" />
-              Esqueci minha senha
-            </Button>
+          <div className="text-center lg:text-left select-none">
+            <p className="text-6xl md:text-7xl font-semibold tracking-tight leading-none">
+              {now.toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+            <p className="mt-2 text-2xl md:text-4xl font-light text-white/85 capitalize">
+              {now.toLocaleDateString("pt-BR", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+              })}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-white/10 backdrop-blur p-4 md:p-5">
+            <p className="text-sm uppercase tracking-[0.15em] text-white/70 mb-3">
+              Itirapina - Clima de Hoje
+            </p>
+            {weatherLoading ? (
+              <p className="text-white/80 text-sm">Carregando previsao...</p>
+            ) : weather ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-white">
+                  <Thermometer className="h-4 w-4 text-cyan-200" />
+                  <span>{weather.temperature.toFixed(1)} C</span>
+                </div>
+                <div className="flex items-center gap-2 text-white">
+                  <CloudRain className="h-4 w-4 text-blue-200" />
+                  <span>Chance de chuva: {weather.rainChance}%</span>
+                </div>
+                <p className="text-xs text-white/75">
+                  Precipitacao atual: {weather.precipitation.toFixed(1)} mm
+                </p>
+              </div>
+            ) : (
+              <p className="text-white/80 text-sm">
+                Nao foi possivel carregar o clima agora.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <p className="relative text-center lg:text-left text-xs tracking-[0.2em] text-white/45 uppercase">
+          Lolana Lavanderia
+        </p>
+      </section>
+
+      <section className="flex items-center justify-center p-4 md:p-8">
+        <Card className="w-full max-w-xl border-0 bg-transparent shadow-none">
+          <CardHeader className="text-left pb-2">
+            <h1 className="text-3xl font-bold text-[hsl(215,70%,15%)]">
+              Acesse sua conta
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Entre com suas credenciais para continuar
+            </p>
+          </CardHeader>
+          <CardContent className="px-0 pb-2">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-[hsl(215,70%,25%)]">
+                  Usuário
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    placeholder="ex: admin"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10 h-12 rounded-xl border border-[hsl(214,30%,84%)] focus:border-[hsl(210,100%,50%)] transition-colors bg-white/80"
+                    required
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-[hsl(215,70%,25%)]">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-12 rounded-xl border border-[hsl(214,30%,84%)] focus:border-[hsl(210,100%,50%)] transition-colors bg-white/80"
+                    required
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-12 rounded-xl text-lg font-semibold bg-gradient-to-r from-[hsl(221,71%,53%)] to-[hsl(219,68%,47%)] hover:from-[hsl(221,72%,48%)] hover:to-[hsl(219,69%,42%)] shadow-lg transition-all duration-300"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Entrando...
+                  </span>
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+
+              <p className="text-center text-xs text-muted-foreground pt-1">
+                Protegido por criptografia de ponta a ponta.
+              </p>
+            </form>
+
+            <div className="mt-3 text-right">
+              <Button
+                variant="link"
+                onClick={() => {
+                  resetForgotDialog();
+                  setForgotOpen(true);
+                }}
+                className="text-[hsl(221,71%,53%)] hover:text-[hsl(221,72%,45%)] gap-1 px-0"
+              >
+                Esqueci minha senha
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Forgot Password Dialog */}
       <Dialog
