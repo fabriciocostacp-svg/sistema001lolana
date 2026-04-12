@@ -55,7 +55,6 @@ import {
   DollarSign,
   Download,
   Send,
-  FileText,
   FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -224,6 +223,7 @@ export const PedidosPage = () => {
     pedido: PedidoDB,
     comEmojis = false,
     incluirLogoNaMensagem = false,
+    cpfCnpjCustom?: string,
   ) => {
     const itens = pedido.itens
       .map(
@@ -268,7 +268,8 @@ export const PedidosPage = () => {
     texto += `${prefixo.pedido}Pedido #${pedido.numero}\n\n`;
     texto += `${prefixo.cliente}Cliente: ${pedido.cliente_nome}\n`;
     texto += `Telefone: ${pedido.cliente_telefone}\n`;
-    if (printCpfCnpj) texto += `${prefixo.doc}CPF/CNPJ: ${printCpfCnpj}\n`;
+    const cpfCnpj = cpfCnpjCustom ?? printCpfCnpj;
+    if (cpfCnpj) texto += `${prefixo.doc}CPF/CNPJ: ${cpfCnpj}\n`;
     texto += `Data: ${formatDate(pedido.created_at)}\n\n`;
     texto += `Itens:\n${itens}\n\n`;
 
@@ -288,53 +289,44 @@ export const PedidosPage = () => {
     return texto;
   };
 
-  const handleBaixarTxtCupom = () => {
-    const pedido = printDialog.pedido;
-    if (!pedido) return;
-    const texto = gerarTextoCupom(pedido);
-    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `cupom_pedido_${pedido.numero}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("Arquivo TXT baixado!");
+  const baixarPdfDoPedido = async (pedido: PedidoDB, cpfCnpj?: string) => {
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    doc.setFont("courier", "normal");
+    doc.setFontSize(10);
+
+    const carregarLogoDataUrl = async () => {
+      const response = await fetch(lolanaLogo);
+      const blob = await response.blob();
+      return await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsDataURL(blob);
+      });
+    };
+
+    try {
+      const logoDataUrl = await carregarLogoDataUrl();
+      doc.addImage(logoDataUrl, "PNG", 40, 30, 44, 44);
+    } catch {
+      // Se falhar a logo, o PDF ainda e gerado com os dados do cupom.
+    }
+
+    const texto = gerarTextoCupom(pedido, false, false, cpfCnpj);
+    const linhas = doc.splitTextToSize(texto, 515);
+    doc.text(linhas, 40, 90);
+    doc.save(`cupom_pedido_${pedido.numero}.pdf`);
+    toast.success("Arquivo PDF baixado!");
   };
 
   const handleBaixarPdfCupom = () => {
     const pedido = printDialog.pedido;
     if (!pedido) return;
-    const gerarPdf = async () => {
-      const doc = new jsPDF({ unit: "pt", format: "a4" });
-      doc.setFont("courier", "normal");
-      doc.setFontSize(10);
+    void baixarPdfDoPedido(pedido, printCpfCnpj);
+  };
 
-      const carregarLogoDataUrl = async () => {
-        const response = await fetch(lolanaLogo);
-        const blob = await response.blob();
-        return await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result));
-          reader.readAsDataURL(blob);
-        });
-      };
-
-      try {
-        const logoDataUrl = await carregarLogoDataUrl();
-        doc.addImage(logoDataUrl, "PNG", 40, 30, 44, 44);
-      } catch {
-        // Se falhar a logo, o PDF ainda e gerado com os dados do cupom.
-      }
-
-      const texto = gerarTextoCupom(pedido);
-      const linhas = doc.splitTextToSize(texto, 515);
-      doc.text(linhas, 40, 90);
-      doc.save(`cupom_pedido_${pedido.numero}.pdf`);
-      toast.success("Arquivo PDF baixado!");
-    };
-
-    void gerarPdf();
+  const handleBaixarPdfDireto = (pedido: PedidoDB) => {
+    const cpfPadrao = pedido.cliente_cpf || pedido.cliente_cnpj || "";
+    void baixarPdfDoPedido(pedido, cpfPadrao);
   };
 
   const handlePrint = () => {
@@ -629,7 +621,8 @@ export const PedidosPage = () => {
                           variant="outline"
                           size="sm"
                           className="gap-2 rounded-xl"
-                          onClick={() => handleOpenPrint(pedido)}
+                          onClick={() => handleBaixarPdfDireto(pedido)}
+                          title="Baixar PDF"
                         >
                           <Printer className="h-4 w-4" />
                         </Button>
@@ -859,7 +852,8 @@ export const PedidosPage = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="hover:bg-[hsl(210,100%,50%)]/20 hover:text-[hsl(210,100%,50%)] rounded-xl"
-                                onClick={() => handleOpenPrint(pedido)}
+                                onClick={() => handleBaixarPdfDireto(pedido)}
+                                title="Baixar PDF"
                               >
                                 <Printer className="h-5 w-5" />
                               </Button>
@@ -950,14 +944,6 @@ export const PedidosPage = () => {
               className="rounded-xl"
             >
               Cancelar
-            </Button>
-            <Button
-              onClick={handleBaixarTxtCupom}
-              variant="outline"
-              className="rounded-xl gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Baixar TXT
             </Button>
             <Button
               onClick={handleBaixarPdfCupom}
