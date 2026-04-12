@@ -20,7 +20,9 @@ function toCsv(headers: string[], rows: Record<string, unknown>[]): string {
 }
 
 function downloadFile(content: string, filename: string) {
-  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + content], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -51,22 +53,52 @@ export const BackupButton = () => {
 
       if (clientes.data?.length) {
         downloadFile(
-          toCsv(["numero", "nome", "telefone", "endereco", "cpf", "cnpj", "created_at"], clientes.data),
-          `backup_clientes_${now}.csv`
+          toCsv(
+            [
+              "numero",
+              "nome",
+              "telefone",
+              "endereco",
+              "cpf",
+              "cnpj",
+              "created_at",
+            ],
+            clientes.data,
+          ),
+          `backup_clientes_${now}.csv`,
         );
       }
 
       if (servicos.data?.length) {
         downloadFile(
-          toCsv(["nome", "categoria", "preco", "ativo", "created_at"], servicos.data),
-          `backup_servicos_${now}.csv`
+          toCsv(
+            ["nome", "categoria", "preco", "ativo", "created_at"],
+            servicos.data,
+          ),
+          `backup_servicos_${now}.csv`,
         );
       }
 
       if (pedidos.data?.length) {
         downloadFile(
-          toCsv(["numero", "cliente_nome", "cliente_telefone", "valor_total", "status", "pago", "retirado", "desconto_percentual", "desconto_valor", "taxa_entrega", "itens", "created_at"], pedidos.data),
-          `backup_pedidos_${now}.csv`
+          toCsv(
+            [
+              "numero",
+              "cliente_nome",
+              "cliente_telefone",
+              "valor_total",
+              "status",
+              "pago",
+              "retirado",
+              "desconto_percentual",
+              "desconto_valor",
+              "taxa_entrega",
+              "itens",
+              "created_at",
+            ],
+            pedidos.data,
+          ),
+          `backup_pedidos_${now}.csv`,
         );
       }
 
@@ -85,7 +117,7 @@ export const BackupButton = () => {
       size="sm"
       onClick={handleBackup}
       disabled={loading}
-      className="gap-2"
+      className="gap-2 w-full sm:w-auto"
     >
       <Download className="h-4 w-4" />
       {loading ? "Exportando..." : "Backup"}
