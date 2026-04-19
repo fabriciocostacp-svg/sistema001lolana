@@ -18,8 +18,8 @@ SELECT * FROM (
 ) t
 ORDER BY ord;
 
--- Lista de pedidos (numero, cliente, valor, status, pago) — segunda aba de resultados no editor
-SELECT numero, cliente_nome, cliente_telefone, valor_total, status, pago, retirado, created_at
+-- Lista de pedidos — segunda aba de resultados no editor (sem ORDER BY created_at: coluna pode não existir em bases antigas)
+SELECT numero, cliente_nome, cliente_telefone, valor_total, status, pago, retirado, id
 FROM public.pedidos
-ORDER BY created_at DESC
+ORDER BY id DESC
 LIMIT 200;
