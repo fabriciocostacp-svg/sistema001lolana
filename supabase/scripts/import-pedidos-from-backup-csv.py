@@ -1,6 +1,12 @@
 """
 Gera import-pedidos-backup.sql a partir de backup_pedidos_*.csv
-(export gerado pelo botao Backup da app: colunas numero, cliente_nome, ...).
+ou de um CSV exportado do Supabase (Table Editor / COPY) com as mesmas colunas.
+
+Colunas esperadas: numero, cliente_nome, cliente_telefone, valor_total, status, itens,
+created_at, updated_at, pago, retirado, desconto_*, taxa_entrega, cliente_cpf, cliente_cnpj
+(opcionais: id, cliente_id — ignorados na insercao; resolve cliente pelo telefone).
+
+pago/retirado: aceita true/false ou t/f (export Postgres).
 
 Uso (na pasta scripts ou na raiz do workspace onde esta o CSV):
   python import-pedidos-from-backup-csv.py
@@ -32,6 +38,12 @@ def sql_ts(s: str) -> str:
     if not s:
         return "now()"
     return "'" + esc(s) + "'::timestamptz"
+
+
+def parse_bool(raw: str) -> bool:
+    """Aceita true/false, t/f (export Postgres/CSV), 1/0."""
+    v = (raw or "").strip().lower()
+    return v in ("true", "1", "sim", "yes", "t")
 
 
 def sql_jsonb(raw: str) -> str:
@@ -67,7 +79,8 @@ def find_csv(arg: str | None) -> Path:
 
 def main() -> None:
     csv_path = find_csv(sys.argv[1] if len(sys.argv) > 1 else None)
-    out_path = Path(__file__).resolve().parent / "import-pedidos-backup.sql"
+    # Nao sobrescrever import-pedidos-backup.sql versionado no repo.
+    out_path = Path(__file__).resolve().parent / "import-pedidos-gerado.sql"
 
     rows: list[dict[str, str]] = []
     with csv_path.open(encoding="utf-8-sig", newline="") as f:
@@ -90,8 +103,8 @@ def main() -> None:
             vtotal = float((r.get("valor_total") or "0").replace(",", "."))
         except ValueError:
             vtotal = 0.0
-        pago = (r.get("pago") or "").lower() in ("true", "1", "sim", "yes")
-        retirado = (r.get("retirado") or "").lower() in ("true", "1", "sim", "yes")
+        pago = parse_bool(r.get("pago", ""))
+        retirado = parse_bool(r.get("retirado", ""))
         try:
             dpct = float((r.get("desconto_percentual") or "0").replace(",", "."))
         except ValueError:
@@ -106,19 +119,25 @@ def main() -> None:
             taxa = 0.0
         itens_sql = sql_jsonb(r.get("itens", ""))
         ca = sql_ts(r.get("created_at", ""))
+        ua_raw = (r.get("updated_at") or "").strip() or (r.get("created_at") or "").strip()
+        ua = sql_ts(ua_raw)
+        cpf = (r.get("cliente_cpf") or "").strip()
+        cnpj = (r.get("cliente_cnpj") or "").strip()
+        cpf_sql = "NULL" if not cpf else sql_str(cpf)
+        cnpj_sql = "NULL" if not cnpj else sql_str(cnpj)
 
         inserts.append(
             """INSERT INTO public.pedidos (
   numero, cliente_id, cliente_nome, cliente_telefone,
   valor_total, status, pago, retirado,
   desconto_percentual, desconto_valor, taxa_entrega,
-  itens, created_at
+  itens, created_at, updated_at, cliente_cpf, cliente_cnpj
 )
 SELECT
   {num}, c.id, {nome}, {tel},
   {vtotal}, {status}, {pago}, {retirado},
   {dpct}, {dval}, {taxa},
-  {itens}, {ca}
+  {itens}, {ca}, {ua}, {cpf}, {cnpj}
 FROM public.clientes c
 WHERE regexp_replace(trim(c.telefone), '[^0-9]', '', 'g') = regexp_replace(trim({telq}), '[^0-9]', '', 'g')
 ORDER BY
@@ -138,7 +157,9 @@ ON CONFLICT (numero) DO UPDATE SET
   taxa_entrega = EXCLUDED.taxa_entrega,
   itens = EXCLUDED.itens,
   created_at = EXCLUDED.created_at,
-  updated_at = now();""".format(
+  updated_at = EXCLUDED.updated_at,
+  cliente_cpf = EXCLUDED.cliente_cpf,
+  cliente_cnpj = EXCLUDED.cliente_cnpj;""".format(
                 num=sql_str(num),
                 nome=sql_str(nome),
                 tel=sql_str(tel),
@@ -153,6 +174,9 @@ ON CONFLICT (numero) DO UPDATE SET
                 taxa=f"{taxa:.2f}",
                 itens=itens_sql,
                 ca=ca,
+                ua=ua,
+                cpf=cpf_sql,
+                cnpj=cnpj_sql,
             )
         )
 
@@ -192,7 +216,7 @@ SELECT count(*)::bigint AS pedidos_total FROM public.pedidos;
 """
 
     out_path.write_text(header + "\n\n".join(inserts) + "\n" + footer, encoding="utf-8")
-    print(csv_path, "->", out_path, "inserts:", len(inserts))
+    print(csv_path, "->", out_path.name, "inserts:", len(inserts))
 
 
 if __name__ == "__main__":

@@ -36,3 +36,6 @@ backup_*.csv
 /tabela_clientes.csv
 bcryptjs-*.tgz
 supabase/.temp/
+
+# SQL gerado localmente a partir de CSV (nao versionar)
+supabase/scripts/import-pedidos-gerado.sql
