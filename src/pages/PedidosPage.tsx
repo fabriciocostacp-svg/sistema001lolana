@@ -223,7 +223,7 @@ export const PedidosPage = () => {
   const handleEnviarWhatsAppCupom = () => {
     const pedido = printDialog.pedido;
     if (!pedido) return;
-    const mensagem = gerarTextoCupom(pedido, false, true);
+    const mensagem = gerarTextoCupom(pedido, true, false);
     const telefone = pedido.cliente_telefone.replace(/\D/g, "");
     window.open(
       `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`,
@@ -238,12 +238,22 @@ export const PedidosPage = () => {
     incluirLogoNaMensagem = false,
     cpfCnpjCustom?: string,
   ) => {
-    const itens = pedido.itens
-      .map(
-        (i) =>
-          `  - ${formatQuantidadePedido(i.quantidade)}x ${i.servico.nome} - ${formatCurrency(i.servico.preco * i.quantidade)}`,
-      )
-      .join("\n");
+    const primeiroNome = (nome: string) => {
+      const t = nome.trim();
+      if (!t) return "Cliente";
+      return t.split(/\s+/)[0] ?? t;
+    };
+
+    const itensLinhas = pedido.itens.map((i) => {
+      const q = formatQuantidadePedido(i.quantidade);
+      const nome = i.servico.nome;
+      const val = formatCurrency(i.servico.preco * i.quantidade);
+      return comEmojis
+        ? `• ${q}× ${nome} — ${val}`
+        : `• ${q}x ${nome} — ${val}`;
+    });
+    const itens = itensLinhas.join("\n");
+
     const desconto = Number(pedido.desconto_percentual) || 0;
     const descontoValor = Number(pedido.desconto_valor) || 0;
     const taxaEntrega = Number(pedido.taxa_entrega) || 0;
@@ -251,54 +261,71 @@ export const PedidosPage = () => {
       (acc, i) => acc + i.servico.preco * i.quantidade,
       0,
     );
-    const prefixo = comEmojis
-      ? {
-          loja: "🧺 ",
-          pedido: "📋 ",
-          cliente: "👤 ",
-          doc: "📄 ",
-          subtotal: "🏷️ ",
-          desconto: "🏷️ ",
-          entrega: "🚚 ",
-          total: "💰 ",
-        }
-      : {
-          loja: "",
-          pedido: "",
-          cliente: "",
-          doc: "",
-          subtotal: "",
-          desconto: "",
-          entrega: "",
-          total: "",
-        };
 
-    const logoUrl = new URL(lolanaLogo, window.location.origin).toString();
-    let texto = `${prefixo.loja}LOLANA LAVANDERIA\n`;
-    if (incluirLogoNaMensagem) texto += `${logoUrl}\n`;
-    texto += `Endereço da Lavanderia: ${ENDERECO_LOLANA}\n`;
-    texto += `--------------------------------\n`;
-    texto += `${prefixo.pedido}Pedido #${pedido.numero}\n\n`;
-    texto += `${prefixo.cliente}Cliente: ${pedido.cliente_nome}\n`;
-    texto += `Telefone: ${pedido.cliente_telefone}\n`;
+    const sep = comEmojis ? "━━━━━━━━━━━━━━━━━━━━" : "────────────────────";
     const cpfCnpj = cpfCnpjCustom ?? printCpfCnpj;
-    if (cpfCnpj) texto += `${prefixo.doc}CPF/CNPJ: ${cpfCnpj}\n`;
-    texto += `Data: ${formatDate(pedido.created_at)}\n\n`;
-    texto += `Itens:\n${itens}\n\n`;
 
-    if (desconto > 0) {
-      texto += `${prefixo.subtotal}Subtotal: ${formatCurrency(subtotal)}\n`;
-      texto += `${prefixo.desconto}Desconto (${desconto}%): -${formatCurrency((subtotal * desconto) / 100)}\n`;
+    let texto = "";
+
+    if (comEmojis) {
+      texto += `Olá, ${primeiroNome(pedido.cliente_nome)}! 😊\n\n`;
+      texto += `Segue o *resumo do seu pedido* na Lolana Lavanderia 🧺\n\n`;
+      texto += `${sep}\n`;
+      texto += `📋 *Pedido nº ${pedido.numero}*\n`;
+      texto += `🕐 ${formatDate(pedido.created_at)}\n`;
+      if (cpfCnpj) texto += `📄 CPF/CNPJ: ${cpfCnpj}\n`;
+      texto += `\n*Itens*\n${itens}\n\n`;
+    } else {
+      texto += `LOLANA LAVANDERIA\n`;
+      if (incluirLogoNaMensagem) {
+        const logoUrl = new URL(lolanaLogo, window.location.origin).toString();
+        texto += `${logoUrl}\n`;
+      }
+      texto += `Endereço: ${ENDERECO_LOLANA}\n`;
+      texto += `${sep}\n`;
+      texto += `Pedido nº ${pedido.numero}\n`;
+      texto += `Data: ${formatDate(pedido.created_at)}\n\n`;
+      texto += `Cliente: ${pedido.cliente_nome}\n`;
+      texto += `Telefone: ${pedido.cliente_telefone}\n`;
+      if (cpfCnpj) texto += `CPF/CNPJ: ${cpfCnpj}\n`;
+      texto += `\nItens\n${itens}\n\n`;
     }
-    if (descontoValor > 0)
-      texto += `${prefixo.desconto}Desconto: -${formatCurrency(descontoValor)}\n`;
-    if (taxaEntrega > 0)
-      texto += `${prefixo.entrega}Entrega: +${formatCurrency(taxaEntrega)}\n`;
 
-    texto += `--------------------------------\n`;
-    texto += `${prefixo.total}Total: ${formatCurrency(pedido.valor_total)}\n\n`;
-    texto += `Contato: (19) 99757-9086\n`;
-    texto += `Obrigado pela preferencia!`;
+    if (comEmojis) {
+      if (desconto > 0) {
+        texto += `🏷️ Subtotal: ${formatCurrency(subtotal)}\n`;
+        texto += `🏷️ Desconto (${desconto}%): −${formatCurrency((subtotal * desconto) / 100)}\n`;
+      }
+      if (descontoValor > 0) {
+        texto += `🏷️ Desconto: −${formatCurrency(descontoValor)}\n`;
+      }
+      if (taxaEntrega > 0) {
+        texto += `🚚 Entrega: +${formatCurrency(taxaEntrega)}\n`;
+      }
+      texto += `${sep}\n`;
+      texto += `💰 *Total: ${formatCurrency(pedido.valor_total)}*\n\n`;
+      texto += `📍 *Onde nos encontrar*\n${ENDERECO_LOLANA}\n\n`;
+      texto += `📞 *WhatsApp / telefone:* (19) 99757-9086\n`;
+      texto += `🕐 Seg a sex: 9h–12h | 14h–18h\n\n`;
+      texto += `Obrigado pela *preferência*! 💙\n`;
+      texto += `_Qualquer dúvida, é só chamar._`;
+    } else {
+      if (desconto > 0) {
+        texto += `Subtotal: ${formatCurrency(subtotal)}\n`;
+        texto += `Desconto (${desconto}%): −${formatCurrency((subtotal * desconto) / 100)}\n`;
+      }
+      if (descontoValor > 0) {
+        texto += `Desconto: −${formatCurrency(descontoValor)}\n`;
+      }
+      if (taxaEntrega > 0) {
+        texto += `Taxa de entrega: +${formatCurrency(taxaEntrega)}\n`;
+      }
+      texto += `${sep}\n`;
+      texto += `Total: ${formatCurrency(pedido.valor_total)}\n\n`;
+      texto += `Contato: (19) 99757-9086\n`;
+      texto += `Obrigado pela preferência!`;
+    }
+
     return texto;
   };
 
