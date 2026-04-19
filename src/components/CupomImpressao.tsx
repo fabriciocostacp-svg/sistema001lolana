@@ -1,0 +1,192 @@
+import { forwardRef } from "react";
+import DOMPurify from "dompurify";
+import lolanaLogo from "@/assets/lolana.png";
+import { PedidoDB } from "@/hooks/usePedidos";
+import { formatQuantidadePedido } from "@/lib/peso-balanca";
+
+interface CupomImpressaoProps {
+  pedido: PedidoDB;
+  cpfCnpj?: string;
+}
+
+// Sanitize text to prevent XSS
+const sanitizeText = (text: string | null | undefined): string => {
+  if (!text) return "";
+  // First sanitize with DOMPurify, then escape HTML entities
+  const sanitized = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
+  return sanitized
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+// Mask sensitive data (show only last 4 digits)
+const maskCpfCnpj = (value: string | null | undefined): string => {
+  if (!value) return "";
+  const clean = value.replace(/\D/g, "");
+  if (clean.length <= 4) return clean;
+  const masked = "*".repeat(clean.length - 4) + clean.slice(-4);
+  return masked;
+};
+
+export const CupomImpressao = forwardRef<HTMLDivElement, CupomImpressaoProps>(
+  ({ pedido, cpfCnpj }, ref) => {
+    const formatCurrency = (value: number) => {
+      return value.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+    };
+
+    const formatDate = (date: string) => {
+      return new Date(date).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    const subtotal = pedido.itens.reduce(
+      (acc, item) => acc + item.servico.preco * item.quantidade,
+      0
+    );
+    
+    const descontoPercentual = Number(pedido.desconto_percentual) || 0;
+    const descontoValor = Number(pedido.desconto_valor) || 0;
+    const taxaEntrega = Number(pedido.taxa_entrega) || 0;
+    
+    const valorDescontoPercentual = (subtotal * descontoPercentual) / 100;
+    const descontoTotal = valorDescontoPercentual + descontoValor;
+
+    // Sanitize all user-provided data
+    const safeClienteNome = sanitizeText(pedido.cliente_nome);
+    const safeClienteTelefone = sanitizeText(pedido.cliente_telefone);
+    const safeCpfCnpj = maskCpfCnpj(cpfCnpj || pedido.cliente_cpf || pedido.cliente_cnpj);
+
+    return (
+      <div
+        ref={ref}
+        className="p-4 sm:p-6 bg-white text-black w-full max-w-[min(100%,300px)] mx-auto font-mono text-xs min-w-0 box-border"
+        style={{ fontFamily: "monospace" }}
+      >
+        {/* Logo */}
+        <div className="text-center mb-4">
+          <img
+            src={lolanaLogo}
+            alt="Lolana Lavanderia"
+            className="h-16 mx-auto mb-2"
+          />
+          <h1 className="font-bold text-lg">LOLANA LAVANDERIA</h1>
+          <p className="text-[10px]">Prestação de Serviços</p>
+          <p className="text-[10px]">CNPJ: 31.338.827/0001-33</p>
+          <p className="text-[10px]">Rua Cinco nº752 Vila Garbi</p>
+          <p className="text-[10px]">(esquina com Av. 6)</p>
+          <p className="text-[10px]">📞 (19) 99757-9086</p>
+          <p className="text-[10px] mt-1">Seg a Sex: 09:00-12:00 | 14:00-18:00</p>
+        </div>
+
+        <div className="border-t border-dashed border-black my-2" />
+
+        {/* Dados do Pedido */}
+        <div className="mb-2">
+          <p><strong>Pedido:</strong> #{pedido.numero}</p>
+          <p><strong>Data:</strong> {formatDate(pedido.created_at)}</p>
+        </div>
+
+        <div className="border-t border-dashed border-black my-2" />
+
+        {/* Dados do Cliente */}
+        <div className="mb-2">
+          <p><strong>Cliente:</strong> {safeClienteNome}</p>
+          <p><strong>Tel:</strong> {safeClienteTelefone}</p>
+          {safeCpfCnpj && (
+            <p><strong>CPF/CNPJ:</strong> {safeCpfCnpj}</p>
+          )}
+        </div>
+
+        <div className="border-t border-dashed border-black my-2" />
+
+        {/* Itens */}
+        <div className="mb-2">
+          <p className="font-bold mb-1">ITENS:</p>
+          {pedido.itens.map((item, i) => (
+            <div
+              key={i}
+              className="flex justify-between gap-2 text-[10px] min-w-0"
+            >
+              <span className="min-w-0 break-words pr-1">
+                {formatQuantidadePedido(item.quantidade)}x{" "}
+                {sanitizeText(item.servico.nome)}
+              </span>
+              <span className="shrink-0 text-right tabular-nums">
+                {formatCurrency(item.servico.preco * item.quantidade)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-dashed border-black my-2" />
+
+        {/* Totais */}
+        <div className="space-y-1">
+          <div className="flex justify-between gap-2 min-w-0">
+            <span className="shrink-0">Subtotal:</span>
+            <span className="tabular-nums shrink-0">{formatCurrency(subtotal)}</span>
+          </div>
+          
+          {descontoTotal > 0 && (
+            <div className="flex justify-between gap-2 min-w-0 text-red-600">
+              <span className="min-w-0 break-words">
+                Desconto
+                {descontoPercentual > 0 && ` (${descontoPercentual}%)`}:
+              </span>
+              <span className="shrink-0 tabular-nums">
+                -{formatCurrency(descontoTotal)}
+              </span>
+            </div>
+          )}
+          
+          {taxaEntrega > 0 && (
+            <div className="flex justify-between gap-2 min-w-0">
+              <span className="shrink-0">Taxa Entrega:</span>
+              <span className="shrink-0 tabular-nums">
+                +{formatCurrency(taxaEntrega)}
+              </span>
+            </div>
+          )}
+          
+          <div className="flex justify-between gap-2 min-w-0 font-bold text-sm border-t border-black pt-1">
+            <span className="shrink-0">TOTAL:</span>
+            <span className="tabular-nums shrink-0">
+              {formatCurrency(pedido.valor_total)}
+            </span>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-black my-2" />
+
+        {/* Status */}
+        <div className="text-center">
+          <p><strong>Status:</strong> {pedido.status.toUpperCase()}</p>
+          {pedido.retirado && (
+            <p className={pedido.pago ? "text-emerald-700" : "text-destructive"}>
+              {pedido.pago ? "✓ PAGO" : "✗ NÃO PAGO"}
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-dashed border-black my-2" />
+
+        <p className="text-center text-[9px] mt-4">
+          Obrigado pela preferência!
+        </p>
+      </div>
+    );
+  }
+);
+
+CupomImpressao.displayName = "CupomImpressao";
