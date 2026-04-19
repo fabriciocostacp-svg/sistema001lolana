@@ -3,6 +3,10 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 export default defineConfig({
+  define: {
+    __APP_SUPABASE_URL__: JSON.stringify(""),
+    __APP_SUPABASE_PUBLISHABLE_KEY__: JSON.stringify(""),
+  },
   plugins: [react()],
   test: {
     environment: "jsdom",

@@ -27,3 +27,12 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Backups / dumps locais (não enviar ao Git)
+backup_*.csv
+*_colado.csv
+/pedidos.csv
+/clientes.csv
+/tabela_clientes.csv
+bcryptjs-*.tgz
+supabase/.temp/

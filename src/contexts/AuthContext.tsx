@@ -1,5 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { apiLogin, apiLogout, apiValidateSession, LoginResponse } from "@/lib/api";
+import {
+  apiLogin,
+  apiLogout,
+  apiValidateSession,
+  ApiError,
+  LoginResponse,
+} from "@/lib/api";
 import { isValidSessionToken, clearAllSessionData, safeError } from "@/lib/security-utils";
 
 export interface FuncionarioPermissions {
@@ -22,7 +28,10 @@ interface AuthContextType {
   isLoading: boolean;
   currentUser: CurrentUser | null;
   sessionToken: string | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (
+    username: string,
+    password: string,
+  ) => Promise<{ success: boolean; errorMessage?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -96,37 +105,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     validateStoredSession();
   }, [clearSession]);
 
-  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
-    try {
-      const response: LoginResponse = await apiLogin(username, password);
-      
-      // SECURITY: Validate response has all required fields
-      if (!response.sessionToken || !response.user || !response.expiresAt) {
-        safeError("Invalid login response structure");
-        return false;
-      }
+  const login = useCallback(
+    async (
+      username: string,
+      password: string,
+    ): Promise<{ success: boolean; errorMessage?: string }> => {
+      try {
+        const response: LoginResponse = await apiLogin(username, password);
 
-      // SECURITY: Validate session token format
-      if (!isValidSessionToken(response.sessionToken)) {
-        safeError("Invalid session token format received");
-        return false;
+        // SECURITY: Validate response has all required fields
+        if (!response.sessionToken || !response.user || !response.expiresAt) {
+          safeError("Invalid login response structure");
+          return {
+            success: false,
+            errorMessage: "Resposta inválida do servidor. Tente de novo.",
+          };
+        }
+
+        // SECURITY: Validate session token format
+        if (!isValidSessionToken(response.sessionToken)) {
+          safeError("Invalid session token format received");
+          return {
+            success: false,
+            errorMessage: "Resposta inválida do servidor. Tente de novo.",
+          };
+        }
+
+        // Store session data
+        localStorage.setItem(SESSION_KEY, response.sessionToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+        localStorage.setItem(EXPIRES_KEY, response.expiresAt);
+
+        setIsAuthenticated(true);
+        setCurrentUser(response.user);
+        setSessionToken(response.sessionToken);
+
+        return { success: true };
+      } catch (error) {
+        safeError("Login failed", error);
+        if (error instanceof ApiError) {
+          return { success: false, errorMessage: error.message };
+        }
+        if (error instanceof TypeError) {
+          return {
+            success: false,
+            errorMessage:
+              "Sem conexão ou configuração do servidor ausente. Verifique a internet e as variáveis do site.",
+          };
+        }
+        return {
+          success: false,
+          errorMessage: "Não foi possível entrar. Tente de novo.",
+        };
       }
-      
-      // Store session data
-      localStorage.setItem(SESSION_KEY, response.sessionToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-      localStorage.setItem(EXPIRES_KEY, response.expiresAt);
-      
-      setIsAuthenticated(true);
-      setCurrentUser(response.user);
-      setSessionToken(response.sessionToken);
-      
-      return true;
-    } catch (error) {
-      safeError("Login failed", error);
-      return false;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     const token = sessionToken;

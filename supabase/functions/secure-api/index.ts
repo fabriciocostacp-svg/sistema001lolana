@@ -112,10 +112,18 @@ Deno.serve(async (req) => {
           const result = await supabase.from(table).select('*').order('categoria', { ascending: true }).order('nome', { ascending: true });
           data = result.data;
           error = result.error;
-        } else {
-          const result = await supabase.from(table).select('*').order('created_at', { ascending: false });
+        } else if (table === 'pedidos') {
+          // Sem .order(): evita erro em bases antigas onde `.order('created_at')` quebrava o GET.
+          const result = await supabase.from('pedidos').select('*');
           data = result.data;
           error = result.error;
+        } else {
+          const _never: never = table;
+          void _never;
+          return new Response(
+            JSON.stringify({ error: 'Tabela inválida' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          );
         }
       }
 
@@ -251,7 +259,11 @@ function sanitizeInput(data: any, table: string): any {
     if (data.cliente_cpf) sanitized.cliente_cpf = String(data.cliente_cpf).replace(/[^\d]/g, '').slice(0, 11);
     if (data.cliente_cnpj) sanitized.cliente_cnpj = String(data.cliente_cnpj).replace(/[^\d]/g, '').slice(0, 14);
     if (data.numero !== undefined) sanitized.numero = String(data.numero).slice(0, 10);
-    if (data.status) sanitized.status = ['lavando', 'passando', 'pronto'].includes(data.status) ? data.status : 'lavando';
+    if (data.status) {
+      sanitized.status = ['lavando', 'passando', 'secando', 'pronto'].includes(data.status)
+        ? data.status
+        : 'lavando';
+    }
     if (data.valor_total !== undefined) sanitized.valor_total = Math.max(0, Number(data.valor_total) || 0);
     if (data.desconto_percentual !== undefined) sanitized.desconto_percentual = Math.max(0, Math.min(100, Number(data.desconto_percentual) || 0));
     if (data.desconto_valor !== undefined) sanitized.desconto_valor = Math.max(0, Number(data.desconto_valor) || 0);

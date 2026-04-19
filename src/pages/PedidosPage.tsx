@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
 import DOMPurify from "dompurify";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ import {
   MessageCircle,
   WashingMachine,
   Shirt,
+  Wind,
   Check,
   X,
   Loader2,
@@ -77,6 +79,12 @@ const statusConfig: Record<
     bgClass: "bg-[hsl(38,92%,50%)]",
     textClass: "text-white",
   },
+  secando: {
+    label: "Secando",
+    icon: Wind,
+    bgClass: "bg-[hsl(200,70%,45%)]",
+    textClass: "text-white",
+  },
   pronto: {
     label: "Pronto",
     icon: Check,
@@ -89,6 +97,9 @@ export const PedidosPage = () => {
   const {
     pedidos,
     isLoading,
+    isError,
+    error,
+    refetch,
     updatePedidoStatus,
     updatePedidoPagamento,
     deletePedido,
@@ -399,6 +410,27 @@ export const PedidosPage = () => {
     );
   }
 
+  if (isError) {
+    return (
+      <MainLayout title="Pedidos">
+        <Alert variant="destructive" className="max-w-2xl mx-4 md:mx-auto">
+          <AlertTitle>Erro ao carregar pedidos</AlertTitle>
+          <AlertDescription className="space-y-2 text-sm">
+            <p>{error instanceof Error ? error.message : String(error ?? "")}</p>
+            <p className="text-muted-foreground">
+              Verifique VITE_SUPABASE_URL, chave anon, deploy da função{" "}
+              <code className="text-xs">secure-api</code> e se a sessão de
+              login ainda é válida.
+            </p>
+          </AlertDescription>
+          <Button className="mt-3" onClick={() => void refetch()}>
+            Tentar novamente
+          </Button>
+        </Alert>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout title="Pedidos">
       <Card className="shadow-xl border-0 rounded-2xl overflow-hidden">
@@ -431,6 +463,7 @@ export const PedidosPage = () => {
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="lavando">Lavando</SelectItem>
                   <SelectItem value="passando">Passando</SelectItem>
+                  <SelectItem value="secando">Secando</SelectItem>
                   <SelectItem value="pronto">Pronto</SelectItem>
                 </SelectContent>
               </Select>
@@ -471,10 +504,17 @@ export const PedidosPage = () => {
             )}
           </div>
           {pedidos.length === 0 ? (
-            <div className="p-8 md:p-12 text-center text-muted-foreground">
+            <div className="p-8 md:p-12 text-center text-muted-foreground space-y-2">
               <ClipboardList className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 opacity-30" />
-              <p className="text-base md:text-lg">Nenhum pedido criado</p>
-              <p className="text-sm">Crie pedidos na aba "Serviços"</p>
+              <p className="text-base md:text-lg">Nenhum pedido na aplicação</p>
+              <p className="text-sm max-w-md mx-auto">
+                Se já importou no Supabase, abra o SQL Editor e execute a
+                consulta da opção <strong>5</strong> do{" "}
+                <strong>COPIAR-IMPORT.bat</strong>. Se lá aparecerem linhas mas
+                aqui não, o .env aponta para outro projeto ou falta deploy da{" "}
+                <code className="text-xs">secure-api</code>.
+              </p>
+              <p className="text-sm">Ou crie pedidos novos na aba Serviços.</p>
             </div>
           ) : pedidosFiltrados.length === 0 ? (
             <div className="p-8 md:p-12 text-center text-muted-foreground">

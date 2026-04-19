@@ -11,6 +11,19 @@ import {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+type FuncionarioLoginRow = {
+  id: string;
+  nome: string;
+  usuario: string;
+  senha: string;
+  telefone: string | null;
+  pode_dar_desconto: boolean;
+  pode_cobrar_taxa: boolean;
+  pode_pagar_depois: boolean;
+  is_admin: boolean;
+  ativo: boolean;
+};
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -33,9 +46,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Sanitize input
     const sanitizedUsuario = usuario.trim().slice(0, 100);
+    // Sem trim na senha: pode fazer parte da credencial ou do autocomplete.
     const sanitizedSenha = senha.slice(0, 100);
+
     const clientIP = getClientIP(req);
 
     // Check rate limit for username
@@ -77,15 +91,34 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the funcionario
-    const { data: funcionario, error } = await supabase
-      .from("funcionarios")
-      .select("*")
-      .eq("usuario", sanitizedUsuario)
-      .eq("ativo", true)
-      .single();
+    // Busca simples e estável: igual ao que funcionava antes (eq), + tentativa em minúsculas
+    const usuarioCandidates = [
+      sanitizedUsuario,
+      sanitizedUsuario.toLowerCase(),
+    ].filter((v, i, a) => a.indexOf(v) === i);
 
-    if (error || !funcionario) {
+    let funcionario: FuncionarioLoginRow | null = null;
+    let fetchError: unknown = null;
+
+    for (const key of usuarioCandidates) {
+      const { data, error } = await supabase
+        .from("funcionarios")
+        .select("*")
+        .eq("usuario", key)
+        .eq("ativo", true)
+        .maybeSingle();
+
+      if (error) {
+        fetchError = error;
+        break;
+      }
+      if (data) {
+        funcionario = data as FuncionarioLoginRow;
+        break;
+      }
+    }
+
+    if (fetchError || !funcionario) {
       // Record failed attempt
       await recordLoginAttempt(sanitizedUsuario, "username", false, clientIP);
       await recordLoginAttempt(clientIP, "ip", false);

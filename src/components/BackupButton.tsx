@@ -5,9 +5,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiGetData } from "@/lib/api";
 import { toast } from "sonner";
 
+function cellToCsvString(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "object") {
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return "";
+    }
+  }
+  return String(v);
+}
+
 function toCsv(headers: string[], rows: Record<string, unknown>[]): string {
   const escape = (v: unknown) => {
-    const s = v == null ? "" : String(v);
+    const s = cellToCsvString(v);
     return s.includes(",") || s.includes('"') || s.includes("\n")
       ? `"${s.replace(/"/g, '""')}"`
       : s;

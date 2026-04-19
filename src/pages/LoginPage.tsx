@@ -65,14 +65,16 @@ export const LoginPage = () => {
       return;
     }
 
+    const { usuario, senha } = result.data;
+
     setIsLoading(true);
 
-    const success = await login(username, password);
+    const { success, errorMessage } = await login(usuario, senha);
     if (success) {
       toast.success("Bem-vindo à Lolana Lavanderia!");
       navigate("/clientes");
     } else {
-      toast.error("Usuário ou senha incorretos!");
+      toast.error(errorMessage ?? "Usuário ou senha incorretos!");
     }
     setIsLoading(false);
   };
@@ -282,6 +284,7 @@ export const LoginPage = () => {
                     className="pl-10 h-12 rounded-xl border border-[hsl(214,30%,84%)] focus:border-[hsl(210,100%,50%)] transition-colors bg-white/80"
                     required
                     maxLength={100}
+                    autoComplete="username"
                   />
                 </div>
               </div>
@@ -300,6 +303,7 @@ export const LoginPage = () => {
                     className="pl-10 h-12 rounded-xl border border-[hsl(214,30%,84%)] focus:border-[hsl(210,100%,50%)] transition-colors bg-white/80"
                     required
                     maxLength={100}
+                    autoComplete="current-password"
                   />
                 </div>
               </div>

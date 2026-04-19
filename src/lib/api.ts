@@ -1,4 +1,14 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase-env";
+
+function pickErrorMessage(data: Record<string, unknown>): string | null {
+  const err = data.error;
+  if (typeof err === 'string' && err.trim()) return err.trim();
+  const msg = data.message;
+  if (typeof msg === 'string' && msg.trim()) return msg.trim();
+  const m = data.msg;
+  if (typeof m === 'string' && m.trim()) return m.trim();
+  return null;
+}
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -22,8 +32,24 @@ async function callEdgeFunction<T>(
   queryParams?: Record<string, string>
 ): Promise<T> {
   const { method = 'GET', body, sessionToken } = options;
-  
-  let url = `${SUPABASE_URL}/functions/v1/${functionName}`;
+
+  const baseUrl = getSupabaseUrl();
+  if (!baseUrl) {
+    throw new ApiError(
+      'Configuração ausente: defina VITE_SUPABASE_URL no .env (pasta do projeto, pasta pai ou onde você rodou o npm) ou no Vercel.',
+      503,
+    );
+  }
+
+  const anon = getSupabasePublishableKey();
+  if (!anon) {
+    throw new ApiError(
+      'Configuração ausente: defina VITE_SUPABASE_PUBLISHABLE_KEY (chave anon do Supabase) no Vercel e no .env.',
+      503,
+    );
+  }
+
+  let url = `${baseUrl}/functions/v1/${functionName}`;
   
   if (queryParams) {
     const params = new URLSearchParams(queryParams);
@@ -32,25 +58,50 @@ async function callEdgeFunction<T>(
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    Authorization: `Bearer ${anon}`,
+    apikey: anon,
   };
-  
+
   if (sessionToken) {
     headers['x-session-token'] = sessionToken;
   }
-  
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new ApiError(data.error || 'Erro na requisição', response.status);
+
+  let response: Response;
+  let raw: string;
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    raw = await response.text();
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw new ApiError(
+        'Não foi possível conectar ao Supabase (Edge Functions). Confira: .env com VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY; reinicie o npm run dev; projeto não pausado no painel; internet.',
+        0,
+      );
+    }
+    throw e;
   }
-  
-  return data;
+  let data: Record<string, unknown> = {};
+  if (raw) {
+    try {
+      data = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      throw new ApiError(
+        'Resposta inválida do servidor',
+        response.status || 500,
+      );
+    }
+  }
+
+  if (!response.ok) {
+    const msg = pickErrorMessage(data) ?? 'Erro na requisição';
+    throw new ApiError(msg, response.status);
+  }
+
+  return data as T;
 }
 
 // Auth APIs

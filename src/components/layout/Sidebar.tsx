@@ -31,9 +31,7 @@ const SidebarContent = ({ onItemClick }: { onItemClick?: () => void }) => {
       path: "/gerenciar-servicos",
     },
     { icon: ClipboardList, label: "Pedidos", path: "/pedidos" },
-    ...(currentUser?.permissions.is_admin
-      ? [{ icon: UserCog, label: "Funcionários", path: "/funcionarios" }]
-      : []),
+    { icon: UserCog, label: "Funcionários", path: "/funcionarios" },
   ];
 
   const handleLogout = () => {

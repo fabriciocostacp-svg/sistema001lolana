@@ -20,17 +20,24 @@ export const useClientes = () => {
   const queryClient = useQueryClient();
   const { sessionToken } = useAuth();
 
-  const { data: clientes = [], isLoading } = useQuery({
+  const {
+    data: clientes = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["clientes"],
     queryFn: async () => {
       if (!sessionToken) {
         throw new Error("Não autenticado");
       }
-      
-      const response = await apiGetData<ClienteDB[]>('clientes', sessionToken);
-      return response.data;
+
+      const response = await apiGetData<ClienteDB[]>("clientes", sessionToken);
+      return response.data ?? [];
     },
     enabled: !!sessionToken,
+    retry: 1,
   });
 
   const addCliente = useMutation({
@@ -104,6 +111,9 @@ export const useClientes = () => {
   return {
     clientes,
     isLoading,
+    isError,
+    error,
+    refetch,
     addCliente,
     updateCliente,
     deleteCliente,
