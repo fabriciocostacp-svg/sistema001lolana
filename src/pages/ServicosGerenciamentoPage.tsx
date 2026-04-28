@@ -116,7 +116,14 @@ export const ServicosGerenciamentoPage = () => {
                     <p className="font-mono font-semibold">{formatCurrency(s.preco)}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openEdit(s)} className="rounded-xl gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEdit(s)}
+                      className="h-8 rounded-xl border-[hsl(210,100%,85%)] text-[hsl(210,100%,45%)] hover:bg-[hsl(210,100%,95%)] gap-1"
+                      aria-label={`Editar serviço ${s.nome}`}
+                      title="Editar serviço"
+                    >
                       <Pencil className="h-3 w-3" /> Editar
                     </Button>
                     <AlertDialog>
@@ -160,7 +167,14 @@ export const ServicosGerenciamentoPage = () => {
                       <TableCell className="text-right font-mono font-semibold">{formatCurrency(s.preco)}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center gap-2">
-                          <Button size="sm" variant="outline" onClick={() => openEdit(s)} className="rounded-xl">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEdit(s)}
+                            className="rounded-xl"
+                            aria-label={`Editar serviço ${s.nome}`}
+                            title="Editar serviço"
+                          >
                             <Pencil className="h-3 w-3" />
                           </Button>
                           <AlertDialog>
@@ -196,7 +210,7 @@ export const ServicosGerenciamentoPage = () => {
 
         {/* Dialog Add/Edit */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="rounded-2xl">
+          <DialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingServico ? "Editar Serviço" : "Novo Serviço"}</DialogTitle>
             </DialogHeader>

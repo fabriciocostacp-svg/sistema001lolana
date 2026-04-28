@@ -342,7 +342,7 @@ export const FuncionariosPage = () => {
                           <p className="text-xs text-muted-foreground">{funcionario.telefone}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -352,12 +352,15 @@ export const FuncionariosPage = () => {
                           <Key className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleEdit(funcionario)}
-                          className="hover:bg-[hsl(210,100%,90%)] hover:text-[hsl(210,100%,50%)] rounded-xl h-8 w-8"
+                          className="h-8 rounded-xl border-[hsl(210,100%,85%)] text-[hsl(210,100%,45%)] hover:bg-[hsl(210,100%,95%)]"
+                          aria-label={`Editar funcionário ${funcionario.nome}`}
+                          title="Editar funcionário"
                         >
                           <Pencil className="h-4 w-4" />
+                          <span className="text-xs">Editar</span>
                         </Button>
                         {funcionario.id !== currentUser?.id && (
                           <AlertDialog>
@@ -459,6 +462,8 @@ export const FuncionariosPage = () => {
                               size="icon"
                               onClick={() => handleEdit(funcionario)}
                               className="hover:bg-[hsl(210,100%,90%)] hover:text-[hsl(210,100%,50%)] rounded-xl"
+                              aria-label={`Editar funcionário ${funcionario.nome}`}
+                              title="Editar funcionário"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>

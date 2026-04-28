@@ -318,7 +318,7 @@ export const ClientesPage = () => {
                 Novo Cliente
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)] sm:max-w-lg">
+            <DialogContent className="rounded-2xl mx-4 max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-[hsl(215,70%,25%)]">
                   {editingCliente ? "Editar Cliente" : "Cadastrar Cliente"}
@@ -522,14 +522,17 @@ export const ClientesPage = () => {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleEdit(cliente)}
-                          className="hover:bg-[hsl(210,100%,90%)] hover:text-[hsl(210,100%,50%)] rounded-xl h-8 w-8"
+                          className="h-8 rounded-xl border-[hsl(210,100%,85%)] text-[hsl(210,100%,45%)] hover:bg-[hsl(210,100%,95%)]"
+                          aria-label={`Editar cliente ${cliente.nome}`}
+                          title="Editar cliente"
                         >
                           <Pencil className="h-4 w-4" />
+                          <span className="text-xs">Editar</span>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -638,6 +641,8 @@ export const ClientesPage = () => {
                               size="icon"
                               onClick={() => handleEdit(cliente)}
                               className="hover:bg-[hsl(210,100%,90%)] hover:text-[hsl(210,100%,50%)] rounded-xl"
+                              aria-label={`Editar cliente ${cliente.nome}`}
+                              title="Editar cliente"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
