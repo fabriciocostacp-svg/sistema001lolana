@@ -526,7 +526,12 @@ export const ClientesPage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(cliente)}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleEdit(cliente);
+                          }}
                           className="h-8 rounded-xl border-[hsl(210,100%,85%)] text-[hsl(210,100%,45%)] hover:bg-[hsl(210,100%,95%)]"
                           aria-label={`Editar cliente ${cliente.nome}`}
                           title="Editar cliente"
@@ -639,7 +644,12 @@ export const ClientesPage = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleEdit(cliente)}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleEdit(cliente);
+                              }}
                               className="hover:bg-[hsl(210,100%,90%)] hover:text-[hsl(210,100%,50%)] rounded-xl"
                               aria-label={`Editar cliente ${cliente.nome}`}
                               title="Editar cliente"

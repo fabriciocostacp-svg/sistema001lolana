@@ -119,7 +119,12 @@ export const ServicosGerenciamentoPage = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openEdit(s)}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openEdit(s);
+                      }}
                       className="h-8 rounded-xl border-[hsl(210,100%,85%)] text-[hsl(210,100%,45%)] hover:bg-[hsl(210,100%,95%)] gap-1"
                       aria-label={`Editar serviço ${s.nome}`}
                       title="Editar serviço"
@@ -170,7 +175,12 @@ export const ServicosGerenciamentoPage = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => openEdit(s)}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openEdit(s);
+                            }}
                             className="rounded-xl"
                             aria-label={`Editar serviço ${s.nome}`}
                             title="Editar serviço"

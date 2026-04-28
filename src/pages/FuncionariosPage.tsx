@@ -354,7 +354,12 @@ export const FuncionariosPage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(funcionario)}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleEdit(funcionario);
+                          }}
                           className="h-8 rounded-xl border-[hsl(210,100%,85%)] text-[hsl(210,100%,45%)] hover:bg-[hsl(210,100%,95%)]"
                           aria-label={`Editar funcionário ${funcionario.nome}`}
                           title="Editar funcionário"
@@ -460,7 +465,12 @@ export const FuncionariosPage = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleEdit(funcionario)}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleEdit(funcionario);
+                              }}
                               className="hover:bg-[hsl(210,100%,90%)] hover:text-[hsl(210,100%,50%)] rounded-xl"
                               aria-label={`Editar funcionário ${funcionario.nome}`}
                               title="Editar funcionário"
