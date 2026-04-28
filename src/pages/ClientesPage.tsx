@@ -254,21 +254,26 @@ export const ClientesPage = () => {
   };
 
   const handleEdit = (cliente: ClienteDB) => {
-    const cepMatch = cliente.endereco.match(/\|\s*CEP:\s*([\d-]+)/i);
-    const enderecoSemCep = cliente.endereco
-      .replace(/\|\s*CEP:\s*[\d-]+/i, "")
-      .trim();
+    // Cadastros legados podem vir com campos nulos/vazios; evita quebrar o clique do lápis.
+    const enderecoRaw = String(cliente.endereco ?? "");
+    const telefoneRaw = String(cliente.telefone ?? "");
+    const nomeRaw = String(cliente.nome ?? "");
+    const cpfRaw = String(cliente.cpf ?? "");
+    const cnpjRaw = String(cliente.cnpj ?? "");
+
+    const cepMatch = enderecoRaw.match(/\|\s*CEP:\s*([\d-]+)/i);
+    const enderecoSemCep = enderecoRaw.replace(/\|\s*CEP:\s*[\d-]+/i, "").trim();
 
     setEditingCliente(cliente);
     setFormData({
-      nome: cliente.nome,
-      telefone: cliente.telefone,
+      nome: nomeRaw,
+      telefone: telefoneRaw,
       endereco: enderecoSemCep,
       cep: cepMatch?.[1] ?? "",
-      cpf: cliente.cpf || "",
-      cnpj: cliente.cnpj || "",
+      cpf: cpfRaw,
+      cnpj: cnpjRaw,
     });
-    setTipoCliente(cliente.cnpj ? "empresa" : "pessoa");
+    setTipoCliente(cnpjRaw ? "empresa" : "pessoa");
     setIsOpen(true);
   };
 
