@@ -1,73 +1,92 @@
-# Welcome to your Lovable project
+# 🧺 Lolana Laundry Hub — Dashboard Edition
 
-## Project info
+Versão evoluída do sistema de gestão para lavanderia, com **dashboard**, autenticação e módulos para clientes, serviços, pedidos e funcionários.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Este projeto foi desenvolvido para centralizar a operação da lavanderia em uma aplicação web moderna, responsiva e integrada a banco de dados.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Funcionalidades
 
-**Use Lovable**
+- 📊 Dashboard com visão geral do sistema
+- 🔐 Login e rotas protegidas
+- 👥 Cadastro e gerenciamento de clientes
+- 🧼 Cadastro e gerenciamento de serviços
+- 📦 Controle de pedidos
+- 👨‍💼 Gerenciamento de funcionários
+- 💾 Persistência de dados
+- 📱 Interface responsiva
+- 🔄 Navegação entre módulos com React Router
+- ⚡ Atualização e consulta de dados com TanStack Query
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Tecnologias utilizadas
 
-**Use your preferred IDE**
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- Supabase
+- React Router
+- TanStack Query
+- Vitest
+- Git & GitHub
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🎯 Objetivo do projeto
 
-Follow these steps:
+O objetivo é transformar processos manuais de uma lavanderia em um sistema digital organizado, permitindo acompanhar informações importantes por meio de um painel central e módulos específicos para cada área da operação.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+A versão com dashboard representa uma evolução do projeto inicial e faz parte do meu portfólio prático de desenvolvimento de sistemas web.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📚 Conhecimentos aplicados
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+- Arquitetura de aplicações React
+- Componentização
+- Dashboard administrativo
+- Rotas protegidas
+- Autenticação
+- CRUD
+- Integração com banco de dados
+- Gerenciamento de estado e dados assíncronos
+- TypeScript
+- Interface responsiva
+- Versionamento com Git e GitHub
+
+---
+
+## ▶️ Como executar localmente
+
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Para gerar uma versão de produção:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run build
+```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 👨‍💻 Desenvolvedor
 
-## What technologies are used for this project?
+**Fabricio Costa Cyrillo Pereira**
 
-This project is built with:
+Estudante de Análise e Desenvolvimento de Sistemas e Desenvolvedor Web Júnior.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+🌐 Portfólio: https://flconectadigital.com.br
 
-## How can I deploy this project?
+💼 LinkedIn: https://www.linkedin.com/in/fabricio-costa-b71b293a9
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+🐙 GitHub: https://github.com/fabriciocostacp-svg
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+> Projeto em evolução contínua, utilizado para estudo e aplicação prática de desenvolvimento de sistemas web modernos.
