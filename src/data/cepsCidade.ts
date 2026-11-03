@@ -214,7 +214,7 @@ export const CEPS_CIDADE: CepRuaEntry[] = RAW_CEPS.trim()
   .slice(1)
   .map((line) => line.trim())
   .filter(Boolean)
-  .map((line) => {
+  .map((line): CepRuaEntry | null => {
     const cols = line.split(/\t+|\s{2,}/).map((c) => c.trim());
     if (cols.length < 5) return null;
 
